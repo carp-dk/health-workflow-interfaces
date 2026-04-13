@@ -16,7 +16,7 @@ Two key **design goals** guide this project:
 
 - [Architecture](#architecture)
   - [Workflow Artifact Package](docs/workflow-models.md)
-  - [Consumption Interface](#consumption-interface)
+  - [Consumption Interface](docs/consumption-interface.md)
   - [Platform Profile](#platform-profile)
   - [Package Deserializer](#package-deserializer)
   - [Compatibility Evaluator](#compatibility-evaluator)
@@ -72,18 +72,10 @@ See [docs/workflow-models.md](docs/workflow-models.md) for full field documentat
 
 ### Consumption Interface
 
-`ConsumptionInterface` is the API contract that every participating platform implements.
+[`ConsumptionInterface`](docs/consumption-interface.md) is the API contract that every participating platform implements.
 It covers the full lifecycle of a workflow package: publishing, discovery, retrieval, dependency resolution, compatibility checking, DOI minting, and lineage.
 
-| Operation             | Description                                      |
-|-----------------------|--------------------------------------------------|
-| `getComponent`        | Retrieve a package by id and version             |
-| `search`              | Discover packages matching a query               |
-| `publish`             | Submit a package to the registry                 |
-| `getDOI`              | Mint or retrieve a DOI for a package             |
-| `resolveDependencies` | List all transitive dependencies                 |
-| `checkCompatibility`  | Evaluate whether a package can run on a platform |
-| `getLineage`          | Retrieve the provenance graph for a package      |
+See [docs/consumption-interface.md](docs/consumption-interface.md) for full operation documentation, supporting types, and request/response objects.
 
 > TODO: link to OpenAPI spec once published
 
