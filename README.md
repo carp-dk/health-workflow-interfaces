@@ -3,7 +3,7 @@
 `health-workflow-interfaces` is a platform-neutral shared contract library for digital health workflow interoperability.
 It defines the types, interfaces, and evaluation logic that allow independent research platforms to publish, discover, and consume computational workflows from one another — without coupling to any single platform's internals.
 
-This library is the result of a collaboration between the [Copenhagen Research Platform (CARP)](https://www.carp.dk/) and the [Aware/RAPIDS](https://www.aware.com/) project.
+This library is the result of a collaboration between the [Copenhagen Research Platform (CARP)](https://www.carp.dk/) and the [Aware/RAPIDS](https://www.awareframework.com/) project.
 It is used by [CARP-DSP](https://github.com/carp-dk/carp-dsp) as its reference implementation, and by Aware/RAPIDS as the basis for its consumption adapter.
 Any platform wishing to participate in the interoperability layer can do so by implementing the interfaces defined here — no dependency on CARP-DSP or Aware internals is required.
 
@@ -15,13 +15,13 @@ Two key **design goals** guide this project:
 ## Table of Contents
 
 - [Architecture](#architecture)
-    - [Workflow Artifact Package](#workflow-artifact-package)
-    - [Consumption Interface](#consumption-interface)
-    - [Platform Profile](#platform-profile)
-    - [Package Deserializer](#package-deserializer)
-    - [Compatibility Evaluator](#compatibility-evaluator)
-    - [OpenAPI Specification](#openapi-specification)
-    - [CARP Domain Profile](#carp-domain-profile)
+  - [Workflow Artifact Package](docs/workflow-models.md)
+  - [Consumption Interface](#consumption-interface)
+  - [Platform Profile](#platform-profile)
+  - [Package Deserializer](#package-deserializer)
+  - [Compatibility Evaluator](#compatibility-evaluator)
+  - [OpenAPI Specification](#openapi-specification)
+  - [CARP Domain Profile](#carp-domain-profile)
 - [Implementing a Platform](#implementing-a-platform)
 - [Usage](#usage)
 - [Development](#development)
@@ -31,12 +31,44 @@ Two key **design goals** guide this project:
 The library is organised around three core concepts: a **unit of exchange** (`WorkflowArtifactPackage`), a **shared API contract** (`ConsumptionInterface`), and a **platform capability declaration** (`PlatformProfile`).
 Supporting components handle serialization, compatibility evaluation, and metadata for open science registries.
 
+```mermaid
+flowchart LR
+    subgraph CARP ["CARP-DSP (Publisher)"]
+        DSP_SVC["DspConsumptionService"]
+        DSP_PROF["DspPlatformProfile"]
+    end
+
+    subgraph LIB ["health-workflow-interfaces"]
+        WAP["WorkflowArtifactPackage"]
+        CI["ConsumptionInterface"]
+        PP["PlatformProfile"]
+        CE["CompatibilityEvaluator"]
+    end
+
+    subgraph AWARE ["Aware / RAPIDS (Consumer)"]
+        AWR_ADAPT["AwareConsumptionAdapter"]
+        AWR_PROF["AwarePlatformProfile"]
+    end
+
+    WFH[("WorkflowHub\nRegistry")]
+
+    DSP_SVC -->|implements| CI
+    DSP_PROF -->|implements| PP
+    AWR_ADAPT -->|implements| CI
+    AWR_PROF -->|implements| PP
+
+    DSP_SVC -->|publish WAP| WFH
+    AWR_ADAPT -->|getComponent| WFH
+    CE -->|evaluate WAP vs Profile| PP
+    AWR_ADAPT -->|checkCompatibility| CE
+```
+
 ### Workflow Artifact Package
 
-`WorkflowArtifactPackage` is the portable unit exchanged between platforms.
-It bundles a workflow definition in its native format alongside translations format ([`Common Workflow Language (CWL)`](https://www.commonwl.org)), supporting scripts, [`Research Object Crate (RO-Crate)`](https://www.researchobject.org/ro-crate/) metadata, dependency declarations, and an optional execution snapshot.
+[`WorkflowArtifactPackage`](docs/workflow-models.md) is the portable unit exchanged between platforms.
+It bundles a workflow definition in its native format alongside translations to [Common Workflow Language (CWL)](https://www.commonwl.org), supporting scripts, [RO-Crate](https://www.researchobject.org/ro-crate/) metadata, dependency declarations, and an optional execution snapshot.
 
-> TODO: document fields and serialization format
+See [docs/workflow-models.md](docs/workflow-models.md) for full field documentation, supporting types, and enumeration values.
 
 ### Consumption Interface
 
