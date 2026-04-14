@@ -61,7 +61,11 @@ class ConsumptionInterfaceStubTest {
         override suspend fun resolveDependencies(id: String, version: String): List<ComponentRef> = emptyList()
 
         override suspend fun checkCompatibility(id: String, version: String, platformId: String): CompatibilityReport =
-            CompatibilityReport(compatible = true)
+            CompatibilityReport(
+                signal = CompatibilitySignal.COMPATIBLE,
+                platformId = platformId,
+                supportedOperations = listOf("getComponent", "search", "publish", "getDOI", "resolveDependencies", "checkCompatibility", "getLineage"),
+            )
 
         override suspend fun getLineage(id: String, version: String): LineageGraph = LineageGraph()
     }

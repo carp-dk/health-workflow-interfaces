@@ -2,9 +2,12 @@
 
 package carp.interfaces.api
 
+import carp.interfaces.model.AdaptationSeverity
+import carp.interfaces.model.EnvironmentType
 import carp.interfaces.model.ComponentRef
 import carp.interfaces.model.WorkflowArtifactPackage
 import carp.interfaces.model.WorkflowFormat
+import carp.interfaces.model.ScriptLanguage
 import kotlinx.serialization.Serializable
 
 /**
@@ -65,6 +68,29 @@ interface ConsumptionInterface {
     suspend fun getLineage(id: String, version: String): LineageGraph
 }
 
+/**
+ * Declares the capabilities and constraints of a platform to the interoperability layer.
+ *
+ * Implementations are platform-owned and should describe what the platform can execute
+ * today, not what it might support after future adaptation.
+ */
+interface PlatformProfile {
+    /** Stable identifier for the platform implementation. */
+    val platformId: String
+
+    /** Workflow formats that can be executed or consumed directly. */
+    val supportedFormats: List<WorkflowFormat>
+
+    /** Environment types that can be provisioned or executed by the platform. */
+    val supportedEnvironments: List<EnvironmentType>
+
+    /** Operation names that are natively supported by the platform. */
+    val supportedOperations: List<String>
+
+    /** Constraints that bound adaptation and dependency resolution decisions. */
+    val constraints: PlatformConstraints
+}
+
 @Serializable
 data class SearchQuery(
     val keywords: List<String> = emptyList(),
@@ -83,10 +109,68 @@ data class PublishResult(
 
 @Serializable
 data class CompatibilityReport(
-    val compatible: Boolean,
-    val reasons: List<String> = emptyList(),
+    val signal: CompatibilitySignal,
+    val platformId: String,
+    val supportedOperations: List<String> = emptyList(),
+    val unsupportedOperations: List<String> = emptyList(),
+    val missingEnvironments: List<EnvironmentType> = emptyList(),
+    val requiredAdaptations: List<AdaptationHint> = emptyList(),
+){
+    /**
+     * Legacy convenience flag that treats adapted compatibility as runnable.
+     *
+     * Prefer [signal] for new integrations.
+     */
+    val compatible: Boolean
+        get() = signal != CompatibilitySignal.INCOMPATIBLE
+
+    /**
+     * Legacy convenience messages derived from the richer compatibility payload.
+     *
+     * Prefer [requiredAdaptations] and the structured fields for new integrations.
+     */
+    val reasons: List<String>
+        get() = buildList {
+            addAll(requiredAdaptations.map { it.message })
+            if (unsupportedOperations.isNotEmpty()) {
+                add("Unsupported operations: ${unsupportedOperations.joinToString(", ")}")
+            }
+            if (missingEnvironments.isNotEmpty()) {
+                add("Missing environments: ${missingEnvironments.joinToString(", ")}")
+            }
+        }
+}
+
+
+/**
+ * Signals the overall compatibility status of a workflow on a platform.
+ */
+@Serializable
+enum class CompatibilitySignal {
+    COMPATIBLE,
+    COMPATIBLE_WITH_ADAPTATIONS,
+    INCOMPATIBLE,
+}
+
+/**
+ * Structured hint describing a required adaptation.
+ */
+@Serializable
+data class AdaptationHint(
+    val severity: AdaptationSeverity,
+    val message: String,
+    val field: String? = null,
 )
 
+/**
+ * Platform-level constraints that influence compatibility checks and dependency traversal.
+ */
+@Serializable
+data class PlatformConstraints(
+    val maxDependencyDepth: Int,
+    val requiresDOI: Boolean,
+    val supportedScriptLanguages: List<ScriptLanguage> = emptyList(),
+)
 @Serializable
 data class LineageGraph(
     val nodes: List<LineageNode> = emptyList(),
