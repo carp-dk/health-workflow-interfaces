@@ -17,8 +17,8 @@ Two key **design goals** guide this project:
 - [Architecture](#architecture)
   - [Workflow Artifact Package](docs/workflow-models.md)
   - [Consumption Interface](docs/consumption-interface.md)
-  - [Platform Profile](#platform-profile)
-  - [Package Deserializer](#package-deserializer)
+  - [Platform Profile](docs/platform-profile.md)
+  - [Package Deserialiser](docs/package-deserialiser.md)
   - [Compatibility Evaluator](#compatibility-evaluator)
   - [OpenAPI Specification](#openapi-specification)
   - [CARP Domain Profile](#carp-domain-profile)
@@ -81,17 +81,19 @@ See [docs/consumption-interface.md](docs/consumption-interface.md) for full oper
 
 ### Platform Profile
 
-`PlatformProfile` is the interface a platform implements to declare its capabilities — supported workflow formats, environment types, script languages, and operational constraints.
+[`PlatformProfile`](docs/platform-profile.md) is the interface a platform implements to declare its capabilities — supported workflow formats, environment types, script languages, and operational constraints.
 It is used as input to `CompatibilityEvaluator` when checking whether an incoming package can run on a given platform.
+The `CompatibilityReport` returned by `checkCompatibility` is also documented there alongside `CompatibilitySignal` and `AdaptationHint`.
 
-> TODO: document CARP-DSP and Aware profile declarations
+See [docs/platform-profile.md](docs/platform-profile.md) for full field documentation and type definitions.
 
-### Package Deserializer
+### Package Deserialiser
 
-`PackageDeserialiser` provides shared logic for loading a `WorkflowArtifactPackage` from a zip archive or directory, including content hash verification.
-It is implemented once here so that both CARP-DSP and Aware can consume packages without duplicating deserialization logic.
+[`PackageDeserialiser`](docs/package-deserialiser.md) provides shared logic for loading a `WorkflowArtifactPackage` from a zip archive or a directory on disk.
+`DefaultPackageDeserialiser` reads the `package.json` manifest, validates the SHA-256 content hash against the archive contents, and deserialises the full package object graph.
+Both CARP-DSP and Aware can use it without taking a dependency on each other's internals.
 
-> TODO: document usage and hash algorithm
+See [docs/package-deserialiser.md](docs/package-deserialiser.md) for the hash algorithm, zip format, and usage examples.
 
 ### Compatibility Evaluator
 

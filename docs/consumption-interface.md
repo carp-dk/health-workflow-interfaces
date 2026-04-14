@@ -69,12 +69,18 @@ Outcome of a `publish` call.
 
 ### CompatibilityReport
 
-Result of a `checkCompatibility` call.
+Result of a `checkCompatibility` call. See [docs/platform-profile.md](platform-profile.md#compatibilityreport) for the full field reference, including `CompatibilitySignal` and `AdaptationHint`.
 
 | Field | Type | Description |
 |---|---|---|
-| `compatible` | `Boolean` | Whether the package can run on the target platform |
-| `reasons` | `List<String>` | Human-readable explanation of any incompatibilities (default: empty) |
+| `signal` | `CompatibilitySignal` | Overall verdict: `COMPATIBLE`, `COMPATIBLE_WITH_ADAPTATIONS`, or `INCOMPATIBLE` |
+| `platformId` | `String` | The platform the report was evaluated against |
+| `supportedOperations` | `List<String>` | Operations the platform can execute |
+| `unsupportedOperations` | `List<String>` | Operations the platform cannot execute |
+| `missingEnvironments` | `List<EnvironmentType>` | Environment types required but not supported |
+| `requiredAdaptations` | `List<AdaptationHint>` | Structured hints for each required change |
+| `compatible` _(computed)_ | `Boolean` | `true` when signal is not `INCOMPATIBLE`. Legacy convenience field |
+| `reasons` _(computed)_ | `List<String>` | Human-readable summary derived from the structured fields. Legacy convenience field |
 
 ### LineageGraph
 
