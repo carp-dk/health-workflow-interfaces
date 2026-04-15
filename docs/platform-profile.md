@@ -78,7 +78,8 @@ Operational limits that bound compatibility evaluation and dependency resolution
 
 ## Compatibility types
 
-These types are produced by `CompatibilityEvaluator` and returned via `ConsumptionInterface.checkCompatibility`.
+These types are produced by [`CompatibilityEvaluator`](compatibility-evaluator.md) and returned via `ConsumptionInterface.checkCompatibility`.
+For evaluation rules and signal derivation logic, see [docs/compatibility-evaluator.md](compatibility-evaluator.md).
 
 ### CompatibilityReport
 

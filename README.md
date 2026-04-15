@@ -19,7 +19,7 @@ Two key **design goals** guide this project:
   - [Consumption Interface](docs/consumption-interface.md)
   - [Platform Profile](docs/platform-profile.md)
   - [Package Deserialiser](docs/package-deserialiser.md)
-  - [Compatibility Evaluator](#compatibility-evaluator)
+  - [Compatibility Evaluator](docs/compatibility-evaluator.md)
   - [OpenAPI Specification](#openapi-specification)
   - [CARP Domain Profile](#carp-domain-profile)
 - [Implementing a Platform](#implementing-a-platform)
@@ -97,10 +97,10 @@ See [docs/package-deserialiser.md](docs/package-deserialiser.md) for the hash al
 
 ### Compatibility Evaluator
 
-`CompatibilityEvaluator` is a stateless component that compares a `WorkflowArtifactPackage` against a `PlatformProfile` and produces a `CompatibilityReport`.
-The report includes an overall signal (`COMPATIBLE`, `COMPATIBLE_WITH_ADAPTATIONS`, or `INCOMPATIBLE`) and a list of `AdaptationHint` entries describing each mismatch.
+[`CompatibilityEvaluator`](docs/compatibility-evaluator.md) is a stateless component that compares a `WorkflowArtifactPackage` against a `PlatformProfile` and produces a `CompatibilityReport`.
+`DefaultCompatibilityEvaluator` checks workflow format support (BLOCKING) and script language support (WARNING), then derives an overall signal of `COMPATIBLE`, `COMPATIBLE_WITH_ADAPTATIONS`, or `INCOMPATIBLE`.
 
-> TODO: document evaluation rules and signal semantics
+See [docs/compatibility-evaluator.md](docs/compatibility-evaluator.md) for evaluation rules, signal derivation logic, and usage examples.
 
 ### OpenAPI Specification
 
