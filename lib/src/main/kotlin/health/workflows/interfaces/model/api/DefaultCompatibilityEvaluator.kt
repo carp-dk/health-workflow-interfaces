@@ -1,9 +1,9 @@
-package carp.interfaces.api
+package health.workflows.interfaces.model.api
 
-import carp.interfaces.model.AdaptationSeverity
-import carp.interfaces.model.EnvironmentType
-import carp.interfaces.model.WorkflowArtifactPackage
-import carp.interfaces.model.WorkflowFormat
+import health.workflows.interfaces.model.AdaptationSeverity
+import health.workflows.interfaces.model.EnvironmentType
+import health.workflows.interfaces.model.WorkflowArtifactPackage
+import health.workflows.interfaces.model.WorkflowFormat
 
 /**
  * Default stateless implementation of [CompatibilityEvaluator].

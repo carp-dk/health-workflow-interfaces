@@ -1,10 +1,11 @@
-package carp.interfaces.api
+package health.workflows.interfaces.model.api
 
-import carp.interfaces.model.ComponentRef
-import carp.interfaces.model.NativeWorkflowAsset
-import carp.interfaces.model.PackageMetadata
-import carp.interfaces.model.WorkflowArtifactPackage
-import carp.interfaces.model.WorkflowFormat
+import health.workflows.interfaces.model.ComponentRef
+import health.workflows.interfaces.model.NativeWorkflowAsset
+import health.workflows.interfaces.model.PackageMetadata
+import health.workflows.interfaces.model.WorkflowArtifactPackage
+import health.workflows.interfaces.model.WorkflowFormat
+import health.workflows.interfaces.model.WorkflowGranularity
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
@@ -64,7 +65,15 @@ class ConsumptionInterfaceStubTest {
             CompatibilityReport(
                 signal = CompatibilitySignal.COMPATIBLE,
                 platformId = platformId,
-                supportedOperations = listOf("getComponent", "search", "publish", "getDOI", "resolveDependencies", "checkCompatibility", "getLineage"),
+                supportedOperations = listOf(
+                    "getComponent",
+                    "search",
+                    "publish",
+                    "getDOI",
+                    "resolveDependencies",
+                    "checkCompatibility",
+                    "getLineage"
+                ),
             )
 
         override suspend fun getLineage(id: String, version: String): LineageGraph = LineageGraph()
@@ -79,7 +88,7 @@ class ConsumptionInterfaceStubTest {
                 id = id,
                 version = version,
                 contentHash = "sha256:stub",
-                metadata = PackageMetadata(name = "Stub Package"),
+                metadata = PackageMetadata(name = "Stub Package", granularity = WorkflowGranularity.WORKFLOW),
                 native = NativeWorkflowAsset(format = WorkflowFormat.CARP_DSP, content = "workflow: stub"),
             )
     }

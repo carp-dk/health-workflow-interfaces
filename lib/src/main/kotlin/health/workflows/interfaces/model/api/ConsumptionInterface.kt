@@ -1,13 +1,15 @@
 @file:Suppress("unused")
 
-package carp.interfaces.api
+package health.workflows.interfaces.model.api
 
-import carp.interfaces.model.AdaptationSeverity
-import carp.interfaces.model.EnvironmentType
-import carp.interfaces.model.ComponentRef
-import carp.interfaces.model.WorkflowArtifactPackage
-import carp.interfaces.model.WorkflowFormat
-import carp.interfaces.model.ScriptLanguage
+import health.workflows.interfaces.model.AdaptationSeverity
+import health.workflows.interfaces.model.ComponentRef
+import health.workflows.interfaces.model.DataSensitivity
+import health.workflows.interfaces.model.EnvironmentType
+import health.workflows.interfaces.model.WorkflowGranularity
+import health.workflows.interfaces.model.WorkflowArtifactPackage
+import health.workflows.interfaces.model.WorkflowFormat
+import health.workflows.interfaces.model.ScriptLanguage
 import kotlinx.serialization.Serializable
 
 /**
@@ -97,6 +99,11 @@ data class SearchQuery(
     val tags: List<String> = emptyList(),
     val format: WorkflowFormat? = null,
     val platformId: String? = null,
+    val granularity: WorkflowGranularity? = null,
+    val inputTypes: List<String> = emptyList(),
+    val outputTypes: List<String> = emptyList(),
+    val methods: List<String> = emptyList(),
+    val sensitivityClass: DataSensitivity? = null,
 )
 
 @Serializable

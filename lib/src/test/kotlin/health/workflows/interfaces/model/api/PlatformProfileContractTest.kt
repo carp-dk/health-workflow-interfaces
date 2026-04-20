@@ -1,9 +1,9 @@
-package carp.interfaces.api
+package health.workflows.interfaces.model.api
 
-import carp.interfaces.model.AdaptationSeverity
-import carp.interfaces.model.EnvironmentType
-import carp.interfaces.model.ScriptLanguage
-import carp.interfaces.model.WorkflowFormat
+import health.workflows.interfaces.model.AdaptationSeverity
+import health.workflows.interfaces.model.EnvironmentType
+import health.workflows.interfaces.model.ScriptLanguage
+import health.workflows.interfaces.model.WorkflowFormat
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlinx.serialization.encodeToString

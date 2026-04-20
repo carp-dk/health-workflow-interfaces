@@ -1,13 +1,14 @@
-package carp.interfaces.api
+package health.workflows.interfaces.model.api
 
-import carp.interfaces.model.AdaptationSeverity
-import carp.interfaces.model.EnvironmentType
-import carp.interfaces.model.NativeWorkflowAsset
-import carp.interfaces.model.PackageMetadata
-import carp.interfaces.model.ScriptLanguage
-import carp.interfaces.model.SupportingScript
-import carp.interfaces.model.WorkflowArtifactPackage
-import carp.interfaces.model.WorkflowFormat
+import health.workflows.interfaces.model.AdaptationSeverity
+import health.workflows.interfaces.model.EnvironmentType
+import health.workflows.interfaces.model.NativeWorkflowAsset
+import health.workflows.interfaces.model.PackageMetadata
+import health.workflows.interfaces.model.ScriptLanguage
+import health.workflows.interfaces.model.SupportingScript
+import health.workflows.interfaces.model.WorkflowArtifactPackage
+import health.workflows.interfaces.model.WorkflowFormat
+import health.workflows.interfaces.model.WorkflowGranularity
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -282,7 +283,7 @@ class DefaultCompatibilityEvaluatorTest {
         id = "test.pkg",
         version = "1.0.0",
         contentHash = "sha256:stub",
-        metadata = PackageMetadata(name = "Test Package"),
+        metadata = PackageMetadata(name = "Test Package", granularity = WorkflowGranularity.WORKFLOW),
         native = NativeWorkflowAsset(format = format, content = content),
         scripts = scripts,
     )

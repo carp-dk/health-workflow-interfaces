@@ -1,13 +1,15 @@
-package carp.interfaces.serialization
+package health.workflows.interfaces.model.serialization
 
-import carp.interfaces.model.NativeWorkflowAsset
-import carp.interfaces.model.PackageMetadata
-import carp.interfaces.model.WorkflowArtifactPackage
-import carp.interfaces.model.WorkflowFormat
+import health.workflows.interfaces.model.NativeWorkflowAsset
+import health.workflows.interfaces.model.PackageMetadata
+import health.workflows.interfaces.model.WorkflowArtifactPackage
+import health.workflows.interfaces.model.WorkflowFormat
+import health.workflows.interfaces.model.WorkflowGranularity
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.ByteArrayOutputStream
 import java.nio.file.Files
+import java.nio.file.Path
 import java.security.MessageDigest
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
@@ -154,7 +156,7 @@ class DefaultPackageDeserializerTest {
         id = "test.workflow.pkg",
         version = "1.0.0",
         contentHash = contentHash,
-        metadata = PackageMetadata(name = "Test Workflow"),
+        metadata = PackageMetadata(name = "Test Workflow", granularity = WorkflowGranularity.WORKFLOW),
         native = NativeWorkflowAsset(format = WorkflowFormat.CARP_DSP, content = "workflow: test"),
     )
 
@@ -178,7 +180,7 @@ class DefaultPackageDeserializerTest {
         return baos.toByteArray()
     }
 
-    private fun <T> withTempZip(bytes: ByteArray, block: (java.nio.file.Path) -> T): T {
+    private fun <T> withTempZip(bytes: ByteArray, block: (Path) -> T): T {
         val path = Files.createTempFile("wap-test", ".zip")
         return try {
             path.toFile().writeBytes(bytes)
@@ -188,7 +190,7 @@ class DefaultPackageDeserializerTest {
         }
     }
 
-    private fun <T> withTempDir(block: (java.nio.file.Path) -> T): T {
+    private fun <T> withTempDir(block: (Path) -> T): T {
         val dir = Files.createTempDirectory("wap-dir-test")
         return try {
             block(dir)

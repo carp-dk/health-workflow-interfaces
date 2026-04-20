@@ -1,6 +1,6 @@
-package carp.interfaces.api
+package health.workflows.interfaces.model.api
 
-import carp.interfaces.model.WorkflowArtifactPackage
+import health.workflows.interfaces.model.WorkflowArtifactPackage
 
 /**
  * Stateless evaluator that compares a [WorkflowArtifactPackage] against a [PlatformProfile]

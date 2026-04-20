@@ -1,6 +1,6 @@
-package carp.interfaces.serialization
+package health.workflows.interfaces.model.serialization
 
-import carp.interfaces.model.WorkflowArtifactPackage
+import health.workflows.interfaces.model.WorkflowArtifactPackage
 import java.nio.file.Path
 
 interface PackageDeserializer {
