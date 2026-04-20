@@ -34,6 +34,7 @@ dependencies {
     // This dependency is used internally, and not exposed to consumers on their own compile classpath.
     implementation(libs.guava)
     implementation(libs.kotlinx.serialization.json)
+    implementation(kotlin("stdlib-jdk8"))
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
