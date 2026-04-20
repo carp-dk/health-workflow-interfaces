@@ -1,10 +1,10 @@
 # Consumption Interface
 
-[`ConsumptionInterface`](../lib/src/main/kotlin/carp/interfaces/api/ConsumptionInterface.kt) is the shared API contract that every participating platform implements.
+[`ConsumptionInterface`](../lib/src/main/kotlin/health/workflows/interfaces/model/api/ConsumptionInterface.kt) is the shared API contract that every participating platform implements.
 It covers the full lifecycle of a workflow package: publishing, discovery, retrieval, dependency resolution, compatibility checking, DOI minting, and lineage.
 
 Implementations may back these operations with local catalogues, remote services, or hybrid resolvers.
-The interface is intentionally transport-agnostic — it contains no DSP-specific or Aware-specific behaviour.
+The interface is intentionally platform-agnostic, it contains no DSP-specific or Aware-specific behaviour.
 All operations are `suspend` functions, so callers are expected to use Kotlin coroutines.
 
 ## Operations
@@ -16,7 +16,7 @@ sequenceDiagram
     participant Registry as Backing Registry
 
     Consumer->>CI: search(query)
-    CI->>Registry: query by keywords / tags / format
+    CI->>Registry: query by keywords / tags / format / semantic filters
     Registry-->>CI: matching packages
     CI-->>Consumer: List<WorkflowArtifactPackage>
 
@@ -31,17 +31,17 @@ sequenceDiagram
     CI-->>Consumer: WorkflowArtifactPackage
 ```
 
-### [`ConsumptionInterface`](../lib/src/main/kotlin/carp/interfaces/api/ConsumptionInterface.kt)
+### [`ConsumptionInterface`](../lib/src/main/kotlin/health/workflows/interfaces/model/api/ConsumptionInterface.kt)
 
-| Operation | Signature | Description |
-|---|---|---|
-| `getComponent` | `(id, version) → WorkflowArtifactPackage` | Retrieve a package by id and version. Implementations should fail when the package is not found. |
-| `search` | `(query: SearchQuery) → List<WorkflowArtifactPackage>` | Find packages matching discovery criteria. Returns an empty list when there are no matches. |
-| `publish` | `(pkg: WorkflowArtifactPackage) → PublishResult` | Publish a package into the backing registry. Implementations should validate package integrity. |
-| `getDOI` | `(id, version) → String` | Resolve the DOI for a package. R1 implementations may throw `NotImplementedError`. |
-| `resolveDependencies` | `(id, version) → List<ComponentRef>` | Resolve direct dependencies. Returns an empty list when no dependencies are declared. |
-| `checkCompatibility` | `(id, version, platformId) → CompatibilityReport` | Live compatibility evaluation against a target platform. Results are computed at request time, not served from stale snapshots. |
-| `getLineage` | `(id, version) → LineageGraph` | Retrieve lineage for a package. R1 implementations may return an empty graph. |
+| Operation             | Signature                                              | Description                                                                                                                     |
+|-----------------------|--------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------|
+| `getComponent`        | `(id, version) → WorkflowArtifactPackage`              | Retrieve a package by id and version. Implementations should fail when the package is not found.                                |
+| `search`              | `(query: SearchQuery) → List<WorkflowArtifactPackage>` | Find packages matching discovery criteria. Returns an empty list when there are no matches.                                     |
+| `publish`             | `(pkg: WorkflowArtifactPackage) → PublishResult`       | Publish a package into the backing registry. Implementations should validate package integrity.                                 |
+| `getDOI`              | `(id, version) → String`                               | Resolve the DOI for a package.                                                                                                  |
+| `resolveDependencies` | `(id, version) → List<ComponentRef>`                   | Resolve direct dependencies. Returns an empty list when no dependencies are declared.                                           |
+| `checkCompatibility`  | `(id, version, platformId) → CompatibilityReport`      | Live compatibility evaluation against a target platform. Results are computed at request time, not served from stale snapshots. |
+| `getLineage`          | `(id, version) → LineageGraph`                         | Retrieve lineage for a package.                                                                                                 |
 
 ## Supporting types
 
@@ -55,57 +55,66 @@ Criteria for discovering workflow packages.
 | `tags` | `List<String>` | Tags to filter by (default: empty) |
 | `format` | `WorkflowFormat?` | Restrict results to a specific workflow format |
 | `platformId` | `String?` | Restrict results to packages compatible with a specific platform |
+| `granularity` | `WorkflowGranularity?` | Restrict results to a specific workflow scope |
+| `inputTypes` | `List<String>` | Filter by declared input types from `PackageMetadata.inputs` (default: empty) |
+| `outputTypes` | `List<String>` | Filter by declared output types from `PackageMetadata.outputs` (default: empty) |
+| `methods` | `List<String>` | Filter by declared method names/tool ids (default: empty) |
+| `sensitivityClass` | `DataSensitivity?` | Restrict results by package data sensitivity class |
+
+`SearchQuery` remains fully optional/partial: callers can provide only the filters they care about.
 
 ### PublishResult
 
 Outcome of a `publish` call.
 
-| Field | Type | Description |
-|---|---|---|
+| Field      | Type      | Description                                      |
+|------------|-----------|--------------------------------------------------|
 | `accepted` | `Boolean` | Whether the package was accepted by the registry |
-| `id` | `String` | The id of the published package |
-| `version` | `String` | The version of the published package |
-| `message` | `String?` | Optional status or rejection message |
+| `id`       | `String`  | The id of the published package                  |
+| `version`  | `String`  | The version of the published package             |
+| `message`  | `String?` | Optional status or rejection message             |
 
 ### CompatibilityReport
 
 Result of a `checkCompatibility` call. See [docs/platform-profile.md](platform-profile.md#compatibilityreport) for the full field reference, including `CompatibilitySignal` and `AdaptationHint`.
 
-| Field | Type | Description |
-|---|---|---|
-| `signal` | `CompatibilitySignal` | Overall verdict: `COMPATIBLE`, `COMPATIBLE_WITH_ADAPTATIONS`, or `INCOMPATIBLE` |
-| `platformId` | `String` | The platform the report was evaluated against |
-| `supportedOperations` | `List<String>` | Operations the platform can execute |
-| `unsupportedOperations` | `List<String>` | Operations the platform cannot execute |
-| `missingEnvironments` | `List<EnvironmentType>` | Environment types required but not supported |
-| `requiredAdaptations` | `List<AdaptationHint>` | Structured hints for each required change |
-| `compatible` _(computed)_ | `Boolean` | `true` when signal is not `INCOMPATIBLE`. Legacy convenience field |
-| `reasons` _(computed)_ | `List<String>` | Human-readable summary derived from the structured fields. Legacy convenience field |
+| Field                     | Type                    | Description                                                                         |
+|---------------------------|-------------------------|-------------------------------------------------------------------------------------|
+| `signal`                  | `CompatibilitySignal`   | Overall verdict: `COMPATIBLE`, `COMPATIBLE_WITH_ADAPTATIONS`, or `INCOMPATIBLE`     |
+| `platformId`              | `String`                | The platform the report was evaluated against                                       |
+| `supportedOperations`     | `List<String>`          | Operations the platform can execute                                                 |
+| `unsupportedOperations`   | `List<String>`          | Operations the platform cannot execute                                              |
+| `missingEnvironments`     | `List<EnvironmentType>` | Environment types required but not supported                                        |
+| `requiredAdaptations`     | `List<AdaptationHint>`  | Structured hints for each required change                                           |
+| `compatible` _(computed)_ | `Boolean`               | `true` when signal is not `INCOMPATIBLE`. Legacy convenience field                  |
+| `reasons` _(computed)_    | `List<String>`          | Human-readable summary derived from the structured fields. Legacy convenience field |
 
 ### LineageGraph
 
 Provenance graph for a workflow package.
 
-| Field | Type | Description |
-|---|---|---|
-| `nodes` | `List<LineageNode>` | Packages in the lineage graph (default: empty) |
+| Field   | Type                | Description                                              |
+|---------|---------------------|----------------------------------------------------------|
+| `nodes` | `List<LineageNode>` | Packages in the lineage graph (default: empty)           |
 | `edges` | `List<LineageEdge>` | Directed relationships between packages (default: empty) |
 
 #### LineageNode
 
-| Field | Type | Description |
-|---|---|---|
-| `id` | `String` | Package identifier |
-| `version` | `String` | Package version |
+| Field     | Type     | Description        |
+|-----------|----------|--------------------|
+| `id`      | `String` | Package identifier |
+| `version` | `String` | Package version    |
 
 #### LineageEdge
 
-| Field | Type | Description |
-|---|---|---|
-| `fromId` | `String` | Source package id |
-| `fromVersion` | `String` | Source package version |
-| `toId` | `String` | Target package id |
-| `toVersion` | `String` | Target package version |
-| `relation` | `String` | Relationship type (e.g. `derived-from`, `uses`) |
+| Field         | Type     | Description                                     |
+|---------------|----------|-------------------------------------------------|
+| `fromId`      | `String` | Source package id                               |
+| `fromVersion` | `String` | Source package version                          |
+| `toId`        | `String` | Target package id                               |
+| `toVersion`   | `String` | Target package version                          |
+| `relation`    | `String` | Relationship type (e.g. `derived-from`, `uses`) |
 
 All request and response types are `@Serializable` and can be used to handle all operations through a single endpoint using type dispatch.
+
+The machine-readable OpenAPI 3.1 contract for this interface is at [`openapi.yaml`](../openapi.yaml).

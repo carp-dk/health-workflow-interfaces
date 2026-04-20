@@ -1,6 +1,6 @@
 # Platform Profile
 
-[`PlatformProfile`](../lib/src/main/kotlin/carp/interfaces/api/ConsumptionInterface.kt) is the interface a platform implements to declare its capabilities to the interoperability layer.
+[`PlatformProfile`](../lib/src/main/kotlin/health/workflows/interfaces/model/api/ConsumptionInterface.kt) is the interface a platform implements to declare its capabilities to the interoperability layer.
 It answers the question: _what can this platform actually execute?_
 
 A profile is consumed by `CompatibilityEvaluator` when responding to `checkCompatibility` calls.

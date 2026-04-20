@@ -23,10 +23,36 @@ classDiagram
 
     class PackageMetadata {
         +String name
+        +WorkflowGranularity granularity
         +String? description
         +List~String~? authors
         +String? license
         +List~String~? tags
+        +List~PortSummary~ inputs
+        +List~PortSummary~ outputs
+        +List~MethodRef~ methods
+        +DataSensitivity sensitivityClass
+    }
+
+    class StepPackage {
+        +PackageMetadata metadata
+        +NativeWorkflowAsset native
+        +List~SupportingScript~ scripts
+    }
+
+    class PortSummary {
+        +String id
+        +String type
+        +String? format
+        +String? ontologyRef
+        +String? notes
+    }
+
+    class MethodRef {
+        +String name
+        +String toolId
+        +String? toolVersion
+        +String? reference
     }
 
     class NativeWorkflowAsset {
@@ -77,7 +103,25 @@ classDiagram
         SHELL
     }
 
+    class WorkflowGranularity {
+        <<enumeration>>
+        TASK
+        SUB_WORKFLOW
+        WORKFLOW
+    }
+
+    class DataSensitivity {
+        <<enumeration>>
+        PUBLIC
+        PSEUDONYMISED
+        IDENTIFIABLE
+        RESTRICTED
+    }
+
     WorkflowArtifactPackage "1" --> "1" PackageMetadata
+    StepPackage "1" --> "1" PackageMetadata
+    StepPackage "1" --> "1" NativeWorkflowAsset
+    StepPackage "1" --> "0..*" SupportingScript
     WorkflowArtifactPackage "1" --> "1" NativeWorkflowAsset
     WorkflowArtifactPackage "1" --> "0..1" CwlTranslationAsset
     WorkflowArtifactPackage "1" --> "0..*" SupportingScript
@@ -86,6 +130,10 @@ classDiagram
     WorkflowArtifactPackage "1" --> "0..1" ValidationAssets
     NativeWorkflowAsset --> WorkflowFormat
     SupportingScript --> ScriptLanguage
+    PackageMetadata --> WorkflowGranularity
+    PackageMetadata --> DataSensitivity
+    PackageMetadata --> PortSummary
+    PackageMetadata --> MethodRef
 ```
 
 ## WorkflowArtifactPackage
@@ -98,7 +146,7 @@ It bundles a workflow definition in its native format alongside optional transla
 | `id`           | `String`                  |   Yes    | Unique identifier for this workflow package                                               |
 | `version`      | `String`                  |   Yes    | Version string (e.g. `1.0.0`)                                                             |
 | `contentHash`  | `String`                  |   Yes    | SHA-256 hash of the package contents for integrity verification                           |
-| `metadata`     | `PackageMetadata`         |   Yes    | Descriptive metadata (name, authors, license, tags)                                       |
+| `metadata`     | `PackageMetadata`         |   Yes    | Descriptive + semantic metadata (granularity, ports, methods, sensitivity class)          |
 | `native`       | `NativeWorkflowAsset`     |   Yes    | The workflow in its original platform format                                              |
 | `cwl`          | `CwlTranslationAsset?`    |          | Translation to [Common Workflow Language](https://www.commonwl.org/)                      |
 | `scripts`      | `List<SupportingScript>?` |          | Supporting scripts required by the workflow                                               |
@@ -120,6 +168,44 @@ Descriptive metadata about a workflow package.
 | `authors` | `List<String>?` | | Author names or identifiers |
 | `license` | `String?` | | License identifier (e.g. `MIT`, `Apache-2.0`) |
 | `tags` | `List<String>?` | | Keywords for discovery and search |
+| `granularity` | `WorkflowGranularity` | Yes | Scope of packaged unit (`TASK`, `SUB_WORKFLOW`, `WORKFLOW`) |
+| `inputs` | `List<PortSummary>` | | Input port summaries (default: empty) |
+| `outputs` | `List<PortSummary>` | | Output port summaries (default: empty) |
+| `methods` | `List<MethodRef>` | | Declared methods/tools used by the workflow (default: empty) |
+| `sensitivityClass` | `DataSensitivity` | | Data sensitivity classification (default: `PUBLIC`) |
+
+### StepPackage
+
+Compact packaging model for a single workflow step or sub-workflow, reusing shared metadata and native asset types.
+
+| Field | Type | Required | Description |
+|---|---|:---:|---|
+| `metadata` | `PackageMetadata` | Yes | Semantic and descriptive metadata for the step |
+| `native` | `NativeWorkflowAsset` | Yes | Native workflow content for the step |
+| `scripts` | `List<SupportingScript>` | | Supporting scripts (default: empty) |
+
+### PortSummary
+
+High-level summary of one workflow input or output port.
+
+| Field | Type | Required | Description |
+|---|---|:---:|---|
+| `id` | `String` | Yes | Stable port identifier |
+| `type` | `String` | Yes | Logical data type (for example `tabular`, `json`) |
+| `format` | `String?` | | Optional concrete serialisation format |
+| `ontologyRef` | `String?` | | Optional ontology URI for semantic alignment |
+| `notes` | `String?` | | Optional free-text notes |
+
+### MethodRef
+
+Reference to a method/tool used by the packaged workflow.
+
+| Field | Type | Required | Description |
+|---|---|:---:|---|
+| `name` | `String` | Yes | Method name |
+| `toolId` | `String` | Yes | Stable tool identifier |
+| `toolVersion` | `String?` | | Optional tool version |
+| `reference` | `String?` | | Optional URL to docs or publication |
 
 ### NativeWorkflowAsset
 
@@ -222,3 +308,25 @@ Indicates the severity of a compatibility issue reported by `CompatibilityEvalua
 | `BLOCKING` | The workflow cannot run on the target platform without modification |
 | `WARNING` | The workflow can run but may behave differently or require manual steps |
 | `INFO` | Informational note; no impact on execution |
+
+### WorkflowGranularity
+
+Defines the scope of the packaged workflow unit.
+
+| Value | Description |
+|---|---|
+| `TASK` | Single task/operator |
+| `SUB_WORKFLOW` | Reusable sub-workflow |
+| `WORKFLOW` | Full end-to-end workflow |
+
+### DataSensitivity
+
+Classifies expected sensitivity of data handled by a package.
+
+| Value | Description |
+|---|---|
+| `PUBLIC` | No sensitive data expected |
+| `PSEUDONYMISED` | Indirect identifiers may be present |
+| `IDENTIFIABLE` | Direct identifiers may be present |
+| `RESTRICTED` | Highly controlled data requiring strict governance |
+

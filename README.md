@@ -67,6 +67,7 @@ flowchart LR
 
 [`WorkflowArtifactPackage`](docs/workflow-models.md) is the portable unit exchanged between platforms.
 It bundles a workflow definition in its native format alongside translations to [Common Workflow Language (CWL)](https://www.commonwl.org), supporting scripts, [RO-Crate](https://www.researchobject.org/ro-crate/) metadata, dependency declarations, and an optional execution snapshot.
+Its `PackageMetadata` also carries semantic descriptors (granularity, inputs/outputs, methods, and data sensitivity) to support richer discovery and governance.
 
 See [docs/workflow-models.md](docs/workflow-models.md) for full field documentation, supporting types, and enumeration values.
 
@@ -74,10 +75,11 @@ See [docs/workflow-models.md](docs/workflow-models.md) for full field documentat
 
 [`ConsumptionInterface`](docs/consumption-interface.md) is the API contract that every participating platform implements.
 It covers the full lifecycle of a workflow package: publishing, discovery, retrieval, dependency resolution, compatibility checking, DOI minting, and lineage.
+Discovery via `search` supports both basic filters (keywords/tags/format) and semantic filters derived from package metadata.
 
 See [docs/consumption-interface.md](docs/consumption-interface.md) for full operation documentation, supporting types, and request/response objects.
 
-> TODO: link to OpenAPI spec once published
+The machine-readable OpenAPI contract is available at [`openapi.yaml`](openapi.yaml).
 
 ### Platform Profile
 
@@ -104,10 +106,15 @@ See [docs/compatibility-evaluator.md](docs/compatibility-evaluator.md) for evalu
 
 ### OpenAPI Specification
 
-An OpenAPI 3.1 specification for the `ConsumptionInterface` REST API is provided at `openapi.yaml`.
-Platforms can use this to generate HTTP clients without taking a Kotlin dependency.
+An OpenAPI 3.1 specification for the `ConsumptionInterface` REST API is provided at [`openapi.yaml`](openapi.yaml).
+Platforms can use this to generate HTTP clients without taking a Kotlin dependency on `health-workflow-interfaces`.
 
-> TODO: publish spec and link here
+The spec covers all seven operations, includes example payloads for `getComponent`, `search`, and `checkCompatibility`, and passes `spectral lint` (OAS ruleset) with zero errors.
+A `.spectral.yaml` at the repo root pins the ruleset for repeatable local linting:
+
+```bash
+npx @stoplight/spectral-cli lint openapi.yaml
+```
 
 ### CARP Domain Profile
 

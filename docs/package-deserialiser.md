@@ -1,9 +1,9 @@
 # Package Deserializer
 
-[`PackageDeserialiser`](../lib/src/main/kotlin/carp/interfaces/serialization/PackageDeserializer.kt) provides shared logic for loading a [`WorkflowArtifactPackage`](workflow-models.md) from a zip archive or a directory.
+[`PackageDeserialiser`](../lib/src/main/kotlin/health/workflows/interfaces/model/serialization/PackageDeserializer.kt) provides shared logic for loading a [`WorkflowArtifactPackage`](workflow-models.md) from a zip archive or a directory.
 It is implemented once here so that both CARP-DSP and Aware can consume packages without duplicating deserialization or integrity-checking logic.
 
-The bundled [`DefaultPackageDeserialiser`](../lib/src/main/kotlin/carp/interfaces/serialization/DefaultPackageDeserializer.kt) is the standard implementation.
+The bundled [`DefaultPackageDeserialiser`](../lib/src/main/kotlin/health/workflows/interfaces/model/serialization/DefaultPackageDeserializer.kt) is the standard implementation.
 It reads the `package.json` manifest, validates content integrity via SHA-256, and deserializes the full package.
 
 ## Interface

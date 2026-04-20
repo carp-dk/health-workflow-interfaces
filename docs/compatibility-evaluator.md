@@ -1,10 +1,10 @@
 # Compatibility Evaluator
 
-[`CompatibilityEvaluator`](../lib/src/main/kotlin/carp/interfaces/api/CompatibilityEvaluator.kt) is a stateless component that compares a [`WorkflowArtifactPackage`](workflow-models.md) against a [`PlatformProfile`](platform-profile.md) and produces a [`CompatibilityReport`](platform-profile.md#compatibilityreport).
+[`CompatibilityEvaluator`](../lib/src/main/kotlin/health/workflows/interfaces/model/api/CompatibilityEvaluator.kt) is a stateless component that compares a [`WorkflowArtifactPackage`](workflow-models.md) against a [`PlatformProfile`](platform-profile.md) and produces a [`CompatibilityReport`](platform-profile.md#compatibilityreport).
 
 It is called by `ConsumptionInterface.checkCompatibility` and must remain a pure function — no I/O, no network, no mutable state.
 
-The bundled [`DefaultCompatibilityEvaluator`](../lib/src/main/kotlin/carp/interfaces/api/DefaultCompatibilityEvaluator.kt) is the standard implementation and is exposed as a singleton object.
+The bundled [`DefaultCompatibilityEvaluator`](../lib/src/main/kotlin/health/workflows/interfaces/model/api/DefaultCompatibilityEvaluator.kt) is the reference implementation and is exposed as a singleton object.
 
 ## Interface
 
@@ -44,7 +44,7 @@ for each distinct environment kind in native.content (CARP_DSP format only):
     kind ∉ profile.supportedEnvironments  →  AdaptationHint(BLOCKING, field = "environments[<kind>]")
 ```
 
-CARP_DSP workflow YAML declares a top-level `environments` block where each entry carries a `kind` field:
+CARP-DSP workflow YAML declares a top-level `environments` block where each entry carries a `kind` field:
 
 ```yaml
 environments:
