@@ -1,5 +1,7 @@
-package health.workflows.interfaces.model.api
+package health.workflows.interfaces.api
 
+import health.workflows.interfaces.api.SearchQuery
+import health.workflows.interfaces.api.SearchRequest
 import health.workflows.interfaces.model.DataSensitivity
 import health.workflows.interfaces.model.WorkflowFormat
 import health.workflows.interfaces.model.WorkflowGranularity

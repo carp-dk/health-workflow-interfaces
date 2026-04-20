@@ -1,4 +1,4 @@
-package health.workflows.interfaces.model.api
+package health.workflows.interfaces.api
 
 import health.workflows.interfaces.model.AdaptationSeverity
 import health.workflows.interfaces.model.EnvironmentType
@@ -54,7 +54,7 @@ object DefaultCompatibilityEvaluator : CompatibilityEvaluator {
             hints += AdaptationHint(
                 severity = AdaptationSeverity.BLOCKING,
                 message = "Workflow format '${pkg.native.format}' is not supported by '${profile.platformId}'. " +
-                    "Supported formats: ${profile.supportedFormats.joinToString()}.",
+                        "Supported formats: ${profile.supportedFormats.joinToString()}.",
                 field = "native.format",
             )
         }
@@ -75,7 +75,7 @@ object DefaultCompatibilityEvaluator : CompatibilityEvaluator {
             hints += AdaptationHint(
                 severity = AdaptationSeverity.WARNING,
                 message = "Script language '$language' is not supported by '${profile.platformId}'. " +
-                    "Supported languages: ${profile.constraints.supportedScriptLanguages.joinToString()}.",
+                        "Supported languages: ${profile.constraints.supportedScriptLanguages.joinToString()}.",
                 field = "scripts[$language]",
             )
         }
@@ -95,7 +95,7 @@ object DefaultCompatibilityEvaluator : CompatibilityEvaluator {
      * The `kind` field is extracted via regex and mapped to [EnvironmentType]. Each type that is
      * absent from [PlatformProfile.supportedEnvironments] produces a BLOCKING hint.
      *
-     * For other formats (RAPIDS, CWL) the environment structure is not yet standardised, so the
+     * For other formats (RAPIDS, CWL) the environment structure is not yet standardized, so the
      * check is skipped and [missingEnvs] is left unchanged.
      */
     private fun checkEnvironments(
@@ -118,7 +118,7 @@ object DefaultCompatibilityEvaluator : CompatibilityEvaluator {
             hints += AdaptationHint(
                 severity = AdaptationSeverity.BLOCKING,
                 message = "Environment type '$env' is required by the workflow but not supported by '${profile.platformId}'. " +
-                    "Supported environments: ${profile.supportedEnvironments.joinToString()}.",
+                        "Supported environments: ${profile.supportedEnvironments.joinToString()}.",
                 field = "environments[$env]",
             )
         }

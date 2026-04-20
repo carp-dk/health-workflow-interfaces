@@ -1,5 +1,9 @@
-package health.workflows.interfaces.model.api
+package health.workflows.interfaces.api
 
+import health.workflows.interfaces.api.CompatibilitySignal
+import health.workflows.interfaces.api.DefaultCompatibilityEvaluator
+import health.workflows.interfaces.api.PlatformConstraints
+import health.workflows.interfaces.api.PlatformProfile
 import health.workflows.interfaces.model.AdaptationSeverity
 import health.workflows.interfaces.model.EnvironmentType
 import health.workflows.interfaces.model.NativeWorkflowAsset

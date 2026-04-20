@@ -1,4 +1,4 @@
-package health.workflows.interfaces.model.serialization
+package health.workflows.interfaces.serialization
 
 import health.workflows.interfaces.model.WorkflowArtifactPackage
 import java.nio.file.Path

@@ -1,5 +1,11 @@
-package health.workflows.interfaces.model.api
+package health.workflows.interfaces.api
 
+import health.workflows.interfaces.api.CompatibilityReport
+import health.workflows.interfaces.api.CompatibilitySignal
+import health.workflows.interfaces.api.ConsumptionInterface
+import health.workflows.interfaces.api.LineageGraph
+import health.workflows.interfaces.api.PublishResult
+import health.workflows.interfaces.api.SearchQuery
 import health.workflows.interfaces.model.ComponentRef
 import health.workflows.interfaces.model.NativeWorkflowAsset
 import health.workflows.interfaces.model.PackageMetadata

@@ -1,6 +1,6 @@
 @file:Suppress("unused")
 
-package health.workflows.interfaces.model.api
+package health.workflows.interfaces.api
 
 import health.workflows.interfaces.model.AdaptationSeverity
 import health.workflows.interfaces.model.ComponentRef

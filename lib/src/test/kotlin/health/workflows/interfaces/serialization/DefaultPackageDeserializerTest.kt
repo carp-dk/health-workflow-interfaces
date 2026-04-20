@@ -1,10 +1,6 @@
-package health.workflows.interfaces.model.serialization
+package health.workflows.interfaces.serialization
 
-import health.workflows.interfaces.model.NativeWorkflowAsset
-import health.workflows.interfaces.model.PackageMetadata
-import health.workflows.interfaces.model.WorkflowArtifactPackage
-import health.workflows.interfaces.model.WorkflowFormat
-import health.workflows.interfaces.model.WorkflowGranularity
+import health.workflows.interfaces.model.*
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.ByteArrayOutputStream
