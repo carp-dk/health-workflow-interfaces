@@ -1,4 +1,4 @@
-package carp.interfaces.model
+package health.workflows.interfaces.model
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -62,12 +62,61 @@ enum class AdaptationSeverity {
 }
 
 @Serializable
+enum class WorkflowGranularity {
+    @SerialName("TASK")
+    TASK,
+
+    @SerialName("SUB_WORKFLOW")
+    SUB_WORKFLOW,
+
+    @SerialName("WORKFLOW")
+    WORKFLOW,
+}
+
+@Serializable
+enum class DataSensitivity {
+    @SerialName("PUBLIC")
+    PUBLIC,
+
+    @SerialName("PSEUDONYMISED")
+    PSEUDONYMISED,
+
+    @SerialName("IDENTIFIABLE")
+    IDENTIFIABLE,
+
+    @SerialName("RESTRICTED")
+    RESTRICTED,
+}
+
+@Serializable
+data class PortSummary(
+    val id: String,
+    val type: String,
+    val format: String? = null,
+    val ontologyRef: String? = null,
+    val notes: String? = null,
+)
+
+@Serializable
+data class MethodRef(
+    val name: String,
+    val toolId: String,
+    val toolVersion: String? = null,
+    val reference: String? = null,
+)
+
+@Serializable
 data class PackageMetadata(
     val name: String,
+    val granularity: WorkflowGranularity,
     val description: String? = null,
     val authors: List<String>? = null,
     val license: String? = null,
     val tags: List<String>? = null,
+    val inputs: List<PortSummary> = emptyList(),
+    val outputs: List<PortSummary> = emptyList(),
+    val methods: List<MethodRef> = emptyList(),
+    val sensitivityClass: DataSensitivity = DataSensitivity.PUBLIC,
 )
 
 @Serializable
@@ -122,5 +171,12 @@ data class WorkflowArtifactPackage(
     val dependencies: List<ComponentRef>? = null,
     val execution: JsonElement? = null,
     val validation: ValidationAssets? = null,
+)
+
+@Serializable
+data class StepPackage(
+    val metadata: PackageMetadata,
+    val native: NativeWorkflowAsset,
+    val scripts: List<SupportingScript> = emptyList(),
 )
 

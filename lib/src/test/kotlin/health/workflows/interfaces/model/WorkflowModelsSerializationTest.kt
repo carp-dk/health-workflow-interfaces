@@ -1,17 +1,5 @@
 package health.workflows.interfaces.model
 
-import carp.interfaces.model.AdaptationSeverity
-import carp.interfaces.model.ComponentRef
-import carp.interfaces.model.CwlTranslationAsset
-import carp.interfaces.model.EnvironmentType
-import carp.interfaces.model.NativeWorkflowAsset
-import carp.interfaces.model.PackageMetadata
-import carp.interfaces.model.RoCrateMetadata
-import carp.interfaces.model.ScriptLanguage
-import carp.interfaces.model.SupportingScript
-import carp.interfaces.model.ValidationAssets
-import carp.interfaces.model.WorkflowArtifactPackage
-import carp.interfaces.model.WorkflowFormat
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlinx.serialization.encodeToString
@@ -32,10 +20,36 @@ class WorkflowModelsSerializationTest {
             contentHash = "sha256:5f16f8d91f2dce13c6d04f87ca9f973641f92be9ed6077dbf637f2ca4490f7ca",
             metadata = PackageMetadata(
                 name = "Risk Scoring Workflow",
+                granularity = WorkflowGranularity.WORKFLOW,
                 description = "End-to-end DSP workflow package",
                 authors = listOf("Alice", "Bob"),
                 license = "Apache-2.0",
                 tags = listOf("dsp", "cwl", "snakemake"),
+                inputs = listOf(
+                    PortSummary(
+                        id = "patient_table",
+                        type = "tabular",
+                        format = "csv",
+                        ontologyRef = "https://example.org/ontology/patient-table",
+                        notes = "Input cohort features",
+                    ),
+                ),
+                outputs = listOf(
+                    PortSummary(
+                        id = "risk_scores",
+                        type = "tabular",
+                        format = "parquet",
+                    ),
+                ),
+                methods = listOf(
+                    MethodRef(
+                        name = "xgboost",
+                        toolId = "xgboost",
+                        toolVersion = "2.0.0",
+                        reference = "https://xgboost.readthedocs.io/",
+                    ),
+                ),
+                sensitivityClass = DataSensitivity.PSEUDONYMISED,
             ),
             native = NativeWorkflowAsset(
                 format = WorkflowFormat.CARP_DSP,
@@ -90,10 +104,60 @@ class WorkflowModelsSerializationTest {
         assertRoundTrip(
             PackageMetadata(
                 name = "Metadata Name",
+                granularity = WorkflowGranularity.SUB_WORKFLOW,
                 description = "Description",
                 authors = listOf("Author"),
                 license = "MIT",
                 tags = listOf("tag1", "tag2"),
+                inputs = listOf(
+                    PortSummary(
+                        id = "raw_input",
+                        type = "json",
+                        format = "application/json",
+                        ontologyRef = "https://example.org/ontology/input",
+                        notes = "Raw payload",
+                    ),
+                ),
+                outputs = listOf(
+                    PortSummary(
+                        id = "result",
+                        type = "json",
+                    ),
+                ),
+                methods = listOf(
+                    MethodRef(
+                        name = "rule-engine",
+                        toolId = "drools",
+                        toolVersion = "8.44.0",
+                        reference = "https://www.drools.org/",
+                    ),
+                ),
+                sensitivityClass = DataSensitivity.RESTRICTED,
+            ),
+        )
+    }
+
+    @Test
+    fun stepPackageRoundTripSerialization() {
+        assertRoundTrip(
+            StepPackage(
+                metadata = PackageMetadata(
+                    name = "Step Package",
+                    granularity = WorkflowGranularity.TASK,
+                    methods = listOf(MethodRef(name = "normalise", toolId = "pandas")),
+                    sensitivityClass = DataSensitivity.PUBLIC,
+                ),
+                native = NativeWorkflowAsset(
+                    format = WorkflowFormat.CARP_DSP,
+                    content = "workflow:\n  steps: []",
+                ),
+                scripts = listOf(
+                    SupportingScript(
+                        name = "step.py",
+                        language = ScriptLanguage.PYTHON,
+                        content = "print('step')",
+                    ),
+                ),
             ),
         )
     }
@@ -179,6 +243,16 @@ class WorkflowModelsSerializationTest {
     @Test
     fun adaptationSeverityEnumRoundTripSerialization() {
         assertEnumRoundTrip(AdaptationSeverity.WARNING)
+    }
+
+    @Test
+    fun workflowGranularityEnumRoundTripSerialization() {
+        assertEnumRoundTrip(WorkflowGranularity.SUB_WORKFLOW)
+    }
+
+    @Test
+    fun dataSensitivityEnumRoundTripSerialization() {
+        assertEnumRoundTrip(DataSensitivity.IDENTIFIABLE)
     }
 
     private inline fun <reified T> assertRoundTrip(value: T) {
