@@ -1,18 +1,13 @@
 package health.workflows.interfaces.api
 
-import health.workflows.interfaces.api.AdaptationHint
-import health.workflows.interfaces.api.CompatibilityReport
-import health.workflows.interfaces.api.CompatibilitySignal
-import health.workflows.interfaces.api.PlatformConstraints
-import health.workflows.interfaces.api.PlatformProfile
 import health.workflows.interfaces.model.AdaptationSeverity
 import health.workflows.interfaces.model.EnvironmentType
 import health.workflows.interfaces.model.ScriptLanguage
 import health.workflows.interfaces.model.WorkflowFormat
-import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class PlatformProfileContractTest {
     private val json = Json {

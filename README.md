@@ -17,6 +17,7 @@ Two key **design goals** guide this project:
 - [Architecture](#architecture)
   - [Workflow Artifact Package](docs/workflow-models.md)
   - [Consumption Interface](docs/consumption-interface.md)
+  - [Component Index](docs/component-index.md)
   - [Platform Profile](docs/platform-profile.md)
   - [Package Deserialiser](docs/package-deserialiser.md)
   - [Compatibility Evaluator](docs/compatibility-evaluator.md)
@@ -28,39 +29,37 @@ Two key **design goals** guide this project:
 
 ## Architecture
 
-The library is organised around three core concepts: a **unit of exchange** (`WorkflowArtifactPackage`), a **shared API contract** (`ConsumptionInterface`), and a **platform capability declaration** (`PlatformProfile`).
-Supporting components handle serialization, compatibility evaluation, and metadata for open science registries.
+The library is organised around four core concepts: a **unit of exchange** (`WorkflowArtifactPackage`), a **shared API contract** (`ConsumptionInterface`), a **component graph** (`ComponentIndex`), and a **platform capability declaration** (`PlatformProfile`).
+Supporting components handle serialization, compatibility evaluation, and optional metadata for open science registries.
 
 ```mermaid
 flowchart LR
-    subgraph CARP ["CARP-DSP (Publisher)"]
-        DSP_SVC["DspConsumptionService"]
+    subgraph CARP ["CARP-DSP"]
+        DSP_SVC["DspConsumptionService\nimplements ConsumptionInterface"]
         DSP_PROF["DspPlatformProfile"]
     end
 
-    subgraph LIB ["health-workflow-interfaces"]
-        WAP["WorkflowArtifactPackage"]
+    subgraph SERVER ["Server (R0)"]
         CI["ConsumptionInterface"]
-        PP["PlatformProfile"]
-        CE["CompatibilityEvaluator"]
+        IDX["ComponentIndex\n(InMemoryComponentIndex)"]
+        STORE[("graph-state.json\n+ packages/")]
     end
 
-    subgraph AWARE ["Aware / RAPIDS (Consumer)"]
-        AWR_ADAPT["AwareConsumptionAdapter"]
+    subgraph AWARE ["Aware / RAPIDS"]
+        AWR_ADAPT["AwareConsumptionAdapter\n(Python, via OpenAPI)"]
         AWR_PROF["AwarePlatformProfile"]
     end
 
-    WFH[("WorkflowHub\nRegistry")]
+    WFH[("WorkflowHub\n(optional)")]
 
-    DSP_SVC -->|implements| CI
-    DSP_PROF -->|implements| PP
-    AWR_ADAPT -->|implements| CI
-    AWR_PROF -->|implements| PP
+    DSP_SVC -->|publish WAP| CI
+    CI --> IDX
+    IDX --> STORE
 
-    DSP_SVC -->|publish WAP| WFH
-    AWR_ADAPT -->|getComponent| WFH
-    CE -->|evaluate WAP vs Profile| PP
-    AWR_ADAPT -->|checkCompatibility| CE
+    AWR_ADAPT -->|publish / search / getComponent| CI
+    AWR_ADAPT -->|checkCompatibility| CI
+
+    CI -.->|RO-Crate adapter| WFH
 ```
 
 ### Workflow Artifact Package
@@ -70,6 +69,16 @@ It bundles a workflow definition in its native format alongside translations to 
 Its `PackageMetadata` also carries semantic descriptors (granularity, inputs/outputs, methods, and data sensitivity) to support richer discovery and governance.
 
 See [docs/workflow-models.md](docs/workflow-models.md) for full field documentation, supporting types, and enumeration values.
+
+### Component Index
+
+[`ComponentIndex`](docs/component-index.md) is the graph query interface for indexing and traversing component relationships.
+When a package is published, it is indexed into a node/edge graph: workflow nodes, step nodes, data type nodes, and method nodes are created and linked by typed edges (`CONTAINS`, `DEPENDS_ON`, `IMPLEMENTS`, etc.).
+This graph powers semantic discovery and lineage traversal across all published components.
+
+`InMemoryComponentIndex` is the R1 implementation, backed by an adjacency map with JSON persistence — graph state is serialised to `data/graph-state.json` and restored on server restart without re-indexing.
+
+See [docs/component-index.md](docs/component-index.md) for the full node/edge type reference, indexing rules, and persistence examples.
 
 ### Consumption Interface
 
@@ -127,11 +136,13 @@ This is referenced in the `RoCrateMetadata` of packages published by CARP-DSP an
 
 To participate in the interoperability layer, a platform needs to:
 
-1. Depend on this library
-2. Implement `ConsumptionInterface` backed by the platform's workflow registry
-3. Implement `PlatformProfile` declaring the platform's capabilities
+1. Depend on this library (Kotlin) or generate a client from `openapi.yaml` (any language)
+2. Implement `ConsumptionInterface` — or point at the shared server via the OpenAPI client
+3. Implement `PlatformProfile` declaring the platform's supported formats, environments, and constraints
 4. Use `PackageDeserialiser` to load incoming packages
 5. Use `CompatibilityEvaluator` to respond to `checkCompatibility` calls
+
+Platforms that use the shared server (R0) only need to implement the OpenAPI client and a `PlatformProfile`. The `ComponentIndex` is managed server-side.
 
 > TODO: add a minimal implementation walkthrough with code examples
 

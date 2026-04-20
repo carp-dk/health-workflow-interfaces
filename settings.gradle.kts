@@ -17,3 +17,4 @@ plugins {
 
 rootProject.name = "health-workflow-interfaces"
 include("lib")
+include("graph")

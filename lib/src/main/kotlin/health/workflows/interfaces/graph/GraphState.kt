@@ -1,8 +1,7 @@
 package health.workflows.interfaces.graph
 
-import health.workflows.interfaces.graph.GraphEdge
-import health.workflows.interfaces.graph.GraphNode
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 /** Snapshot of the full graph suitable for JSON persistence (e.g. git-backed storage). */
@@ -24,7 +23,7 @@ fun InMemoryComponentIndex.loadGraphState(state: GraphState) {
 }
 
 fun InMemoryComponentIndex.encodeToJsonString(): String =
-    graphJson.encodeToString(GraphState.serializer(), toGraphState())
+    graphJson.encodeToString(toGraphState())
 
 fun InMemoryComponentIndex.loadFromJsonString(json: String): Unit =
-    loadGraphState(graphJson.decodeFromString(GraphState.serializer(), json))
+    loadGraphState(graphJson.decodeFromString<GraphState>(json))
