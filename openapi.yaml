@@ -1,0 +1,1145 @@
+openapi: "3.1.0"
+
+info:
+  title: Health Workflow Interfaces — Consumption API
+  description: |
+    REST API for the `ConsumptionInterface` and `ComponentIndex` contracts defined in
+    `health-workflow-interfaces`.
+
+    Covers workflow package discovery, retrieval, publishing, compatibility evaluation,
+    dependency resolution, DOI lookup, provenance lineage, and graph traversal.
+    All endpoints live under `/api/v1`. This spec is the primary integration contract
+    for downstream consumers such as Aware/RAPIDS.
+
+    **Authentication:** all endpoints require a Bearer API key in the `Authorization` header.
+    Keys are provisioned server-side and resolve to a named user identity. Requests with
+    missing or unrecognised keys return `401`.
+
+    **Schema alignment:** all schemas are derived directly from the Kotlin types in
+    `health-workflow-interfaces` and must be kept in sync when those types change.
+  version: "1.0.0"
+  contact:
+    name: Copenhagen Research Platform (CARP)
+    url: https://www.carp.dk/
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+
+servers:
+  - url: /api/v1
+    description: Current stable version
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: components
+    description: Workflow artifact package lifecycle — retrieval, search, publish, and metadata
+  - name: graph
+    description: Component graph traversal via the ComponentIndex
+
+paths:
+
+  # ── Retrieve ──────────────────────────────────────────────────────────────
+
+  /components/{id}/{version}:
+    get:
+      tags: [components]
+      operationId: getComponent
+      summary: Retrieve a workflow package
+      description: >
+        Returns the full `WorkflowArtifactPackage` for the given id and version.
+        Implementations must fail with 404 when the package is not found.
+      parameters:
+        - $ref: "#/components/parameters/packageId"
+        - $ref: "#/components/parameters/packageVersion"
+      responses:
+        "200":
+          description: Package found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkflowArtifactPackage"
+              examples:
+                risk-scoring:
+                  $ref: "#/components/examples/RiskScoringPackage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ── Search ────────────────────────────────────────────────────────────────
+
+  /components/search:
+    post:
+      tags: [components]
+      operationId: search
+      summary: Search for workflow packages
+      description: >
+        Returns all packages matching the supplied discovery criteria.
+        Returns an empty array when there are no matches — never 404.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SearchQuery"
+            examples:
+              by-format:
+                $ref: "#/components/examples/SearchByFormat"
+      responses:
+        "200":
+          description: Matching packages (may be empty)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WorkflowArtifactPackage"
+              examples:
+                one-result:
+                  $ref: "#/components/examples/SearchResults"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ── Publish ───────────────────────────────────────────────────────────────
+
+  /components:
+    post:
+      tags: [components]
+      operationId: publish
+      summary: Publish a workflow package
+      description: >
+        Submits a `WorkflowArtifactPackage` for ingestion into the backing registry.
+        The implementation validates package integrity (including `contentHash`) and
+        returns the outcome. A rejected package returns 200 with `accepted: false`,
+        not a 4xx. The authenticated user's identity is injected into
+        `PackageMetadata.authors` at publish time.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkflowArtifactPackage"
+      responses:
+        "200":
+          description: Publish outcome (accepted or rejected)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublishResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ── DOI ───────────────────────────────────────────────────────────────────
+
+  /components/{id}/{version}/doi:
+    get:
+      tags: [components]
+      operationId: getDoi
+      summary: Resolve the DOI for a package
+      description: >
+        Returns the registered DOI for the given package version.
+        Returns 501 when the deployment has not wired up DOI minting.
+      parameters:
+        - $ref: "#/components/parameters/packageId"
+        - $ref: "#/components/parameters/packageVersion"
+      responses:
+        "200":
+          description: DOI resolved
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [doi]
+                properties:
+                  doi:
+                    type: string
+                    description: The DOI URI for this package version
+                    example: "10.1234/wap.workflow-alpha.1.0.0"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "501":
+          description: DOI minting is not implemented in this deployment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                code: NOT_IMPLEMENTED
+                message: "DOI minting is not configured for this deployment"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ── Dependencies ──────────────────────────────────────────────────────────
+
+  /components/{id}/{version}/dependencies:
+    get:
+      tags: [components]
+      operationId: resolveDependencies
+      summary: Resolve direct dependencies
+      description: >
+        Returns the direct dependencies declared by the package.
+        Returns an empty array when no dependencies are declared — never 404 for
+        a package that exists.
+      parameters:
+        - $ref: "#/components/parameters/packageId"
+        - $ref: "#/components/parameters/packageVersion"
+      responses:
+        "200":
+          description: Dependency list (may be empty)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ComponentRef"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ── Compatibility ─────────────────────────────────────────────────────────
+
+  /components/{id}/{version}/compatibility:
+    post:
+      tags: [components]
+      operationId: checkCompatibility
+      summary: Check compatibility against a platform
+      description: >
+        Evaluates the package against the named platform and returns a structured
+        `CompatibilityReport`. Results are computed at request time — not served
+        from a cache or pre-computed snapshot.
+      parameters:
+        - $ref: "#/components/parameters/packageId"
+        - $ref: "#/components/parameters/packageVersion"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompatibilityRequest"
+            examples:
+              aware-check:
+                $ref: "#/components/examples/CompatibilityRequest"
+      responses:
+        "200":
+          description: Compatibility report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompatibilityReport"
+              examples:
+                incompatible:
+                  $ref: "#/components/examples/IncompatibleReport"
+                compatible:
+                  $ref: "#/components/examples/CompatibleReport"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ── Lineage ───────────────────────────────────────────────────────────────
+
+  /components/{id}/{version}/lineage:
+    get:
+      tags: [components]
+      operationId: getLineage
+      summary: Retrieve package lineage
+      description: >
+        Returns the provenance graph for the package. Returns an empty graph
+        when no lineage is tracked — never 404 for a package that exists.
+      parameters:
+        - $ref: "#/components/parameters/packageId"
+        - $ref: "#/components/parameters/packageVersion"
+      responses:
+        "200":
+          description: Lineage graph (may be empty)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LineageGraph"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ── Graph traversal ───────────────────────────────────────────────────────
+
+  /components/{id}/{version}/related:
+    get:
+      tags: [graph]
+      operationId: getRelated
+      summary: Traverse component graph by relation type
+      description: >
+        Returns all components reachable from the given node via edges of the
+        specified `RelationType`. Returns an empty array when no edges of that
+        type exist — never 404 for a component that exists.
+
+        Common use cases:
+
+        - `CONTAINS` — list all steps a workflow contains
+        - `IMPLEMENTS` — list all methods a workflow implements
+        - `DEPENDS_ON` — list all data types a workflow declares
+        - `DERIVED_FROM` — trace workflow provenance
+      parameters:
+        - $ref: "#/components/parameters/packageId"
+        - $ref: "#/components/parameters/packageVersion"
+        - name: relation
+          in: query
+          required: true
+          description: The edge type to traverse
+          schema:
+            $ref: "#/components/schemas/RelationType"
+          example: "CONTAINS"
+      responses:
+        "200":
+          description: Related component references (may be empty)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ComponentRef"
+              examples:
+                contains:
+                  $ref: "#/components/examples/RelatedSteps"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+# ── Components ───────────────────────────────────────────────────────────────
+
+components:
+
+  # ── Security ───────────────────────────────────────────────────────────────
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: >
+        API key passed as a Bearer token. Keys are provisioned in `config/keys.yaml`
+        and resolve to a named `UserIdentity` with an associated access level.
+        Access to packages with a `sensitivityClass` above the key's access level
+        is rejected with 403.
+
+  # ── Parameters ─────────────────────────────────────────────────────────────
+
+  parameters:
+    packageId:
+      name: id
+      in: path
+      required: true
+      description: Unique package identifier (e.g. `workflow.pkg.alpha`)
+      schema:
+        type: string
+      example: "workflow.pkg.alpha"
+
+    packageVersion:
+      name: version
+      in: path
+      required: true
+      description: Package version string (e.g. `1.0.0`)
+      schema:
+        type: string
+      example: "1.0.0"
+
+  # ── Shared responses ────────────────────────────────────────────────────────
+
+  responses:
+    Unauthorized:
+      description: Missing or unrecognised API key
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            code: UNAUTHORIZED
+            message: "Invalid or missing API key"
+
+    Forbidden:
+      description: API key does not have sufficient access level for this resource
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            code: FORBIDDEN
+            message: "Key access level 'PUBLIC' is insufficient for package sensitivity 'IDENTIFIABLE'"
+
+    NotFound:
+      description: The requested package was not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            code: NOT_FOUND
+            message: "No package found for id='workflow.pkg.alpha' version='1.0.0'"
+
+    BadRequest:
+      description: Invalid request body or parameters
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            code: BAD_REQUEST
+            message: "platformId must not be blank"
+
+    InternalError:
+      description: Unexpected server error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            code: INTERNAL_ERROR
+            message: "An unexpected error occurred"
+
+  # ── Schemas ──────────────────────────────────────────────────────────────────
+
+  schemas:
+
+    # ── Workflow Artifact Package ─────────────────────────────────────────────
+
+    WorkflowArtifactPackage:
+      type: object
+      description: >
+        The portable unit of exchange between platforms. Bundles a workflow definition in
+        its native format alongside optional CWL translation, supporting scripts, RO-Crate
+        metadata, dependency declarations, and an optional execution snapshot.
+      required: [id, version, contentHash, metadata, native]
+      properties:
+        id:
+          type: string
+          description: Unique identifier for this workflow package
+          example: "workflow.pkg.alpha"
+        version:
+          type: string
+          description: Version string (semver recommended)
+          example: "1.0.0"
+        contentHash:
+          type: string
+          description: >
+            SHA-256 digest of the package archive contents (all entries except
+            `package.json`, sorted by name), formatted as `sha256:<64-char hex>`.
+          pattern: "^sha256:[0-9a-f]{64}$"
+          example: "sha256:5f16f8d91f2dce13c6d04f87ca9f973641f92be9ed6077dbf637f2ca4490f7ca"
+        metadata:
+          $ref: "#/components/schemas/PackageMetadata"
+        native:
+          $ref: "#/components/schemas/NativeWorkflowAsset"
+        cwl:
+          oneOf:
+            - $ref: "#/components/schemas/CwlTranslationAsset"
+            - type: "null"
+          description: CWL translation of the workflow, if available
+        scripts:
+          oneOf:
+            - type: array
+              items:
+                $ref: "#/components/schemas/SupportingScript"
+            - type: "null"
+          description: Supporting scripts bundled with the workflow
+        roCrate:
+          oneOf:
+            - $ref: "#/components/schemas/RoCrateMetadata"
+            - type: "null"
+          description: RO-Crate metadata for open science registry submission
+        dependencies:
+          oneOf:
+            - type: array
+              items:
+                $ref: "#/components/schemas/ComponentRef"
+            - type: "null"
+          description: References to other packages this workflow depends on
+        execution:
+          description: >
+            Platform-specific execution snapshot stored as arbitrary JSON.
+            Structure is implementation-defined and not validated by the API.
+        validation:
+          oneOf:
+            - $ref: "#/components/schemas/ValidationAssets"
+            - type: "null"
+          description: Schemas and test inputs for validating workflow inputs/outputs
+
+    PackageMetadata:
+      type: object
+      description: Descriptive and semantic metadata about a workflow package
+      required: [name, granularity]
+      properties:
+        name:
+          type: string
+          example: "Risk Scoring Workflow"
+        granularity:
+          $ref: "#/components/schemas/WorkflowGranularity"
+        description:
+          type: ["string", "null"]
+          example: "End-to-end DSP risk-scoring pipeline"
+        authors:
+          type: ["array", "null"]
+          items:
+            type: string
+          example: ["Alice", "Bob"]
+        license:
+          type: ["string", "null"]
+          description: SPDX license identifier
+          example: "Apache-2.0"
+        tags:
+          type: ["array", "null"]
+          items:
+            type: string
+          description: >
+            Keywords for discovery. In R1, tags are searched via the `keywords`
+            field in `SearchQuery` — dedicated tag filtering is not yet active.
+          example: ["dsp", "cwl", "risk"]
+        inputs:
+          type: array
+          items:
+            $ref: "#/components/schemas/PortSummary"
+          default: []
+        outputs:
+          type: array
+          items:
+            $ref: "#/components/schemas/PortSummary"
+          default: []
+        methods:
+          type: array
+          items:
+            $ref: "#/components/schemas/MethodRef"
+          default: []
+        sensitivityClass:
+          $ref: "#/components/schemas/DataSensitivity"
+          default: "PUBLIC"
+
+    StepPackage:
+      type: object
+      description: A workflow step package with semantic metadata, native definition, and optional scripts
+      required: [metadata, native]
+      properties:
+        metadata:
+          $ref: "#/components/schemas/PackageMetadata"
+        native:
+          $ref: "#/components/schemas/NativeWorkflowAsset"
+        scripts:
+          type: array
+          items:
+            $ref: "#/components/schemas/SupportingScript"
+          default: []
+
+    NativeWorkflowAsset:
+      type: object
+      description: The workflow definition in the originating platform's format
+      required: [format, content]
+      properties:
+        format:
+          $ref: "#/components/schemas/WorkflowFormat"
+        content:
+          type: string
+          description: Raw workflow definition text (YAML, JSON, or format-specific)
+          example: "workflow:\n  steps: []"
+
+    CwlTranslationAsset:
+      type: object
+      description: A translation of the workflow to Common Workflow Language
+      required: [content]
+      properties:
+        content:
+          type: string
+          description: The CWL document as a string
+          example: "cwlVersion: v1.2\nclass: Workflow\ninputs: {}\noutputs: {}\nsteps: {}"
+        toolVersion:
+          type: ["string", "null"]
+          description: CWL specification version used for the translation
+          example: "v1.2.1"
+
+    SupportingScript:
+      type: object
+      description: A script file bundled alongside the workflow definition
+      required: [name, language, content]
+      properties:
+        name:
+          type: string
+          description: Filename of the script
+          example: "prepare_data.py"
+        language:
+          $ref: "#/components/schemas/ScriptLanguage"
+        content:
+          type: string
+          description: Script source code
+          example: "import pandas as pd\nprint('prepare')"
+
+    PortSummary:
+      type: object
+      description: High-level description of one workflow input or output port
+      required: [id, type]
+      properties:
+        id:
+          type: string
+          example: "patient_table"
+        type:
+          type: string
+          description: Logical data type consumed or produced by this port
+          example: "tabular"
+        format:
+          type: ["string", "null"]
+          description: Optional concrete serialisation format
+          example: "csv"
+        ontologyRef:
+          type: ["string", "null"]
+          description: >
+            Optional URI pointing to an ontology term for this port.
+            Used for semantic discovery — matched exactly against `inputTypes`/`outputTypes`
+            in `SearchQuery`.
+          example: "https://schema.org/Dataset"
+        notes:
+          type: ["string", "null"]
+          description: Optional human-readable notes
+          example: "Input cohort features"
+
+    MethodRef:
+      type: object
+      description: A method or tool used by the workflow
+      required: [name, toolId]
+      properties:
+        name:
+          type: string
+          example: "xgboost"
+        toolId:
+          type: string
+          example: "xgboost"
+        toolVersion:
+          type: ["string", "null"]
+          example: "2.0.0"
+        reference:
+          type: ["string", "null"]
+          description: Optional documentation/publication URL
+          example: "https://xgboost.readthedocs.io/"
+
+    RoCrateMetadata:
+      type: object
+      description: >
+        RO-Crate metadata for packaging this workflow for submission to open science
+        registries such as WorkflowHub.
+      required: [crateId, conformsTo, content]
+      properties:
+        crateId:
+          type: string
+          description: Identifier for the RO-Crate (typically a URL or DOI)
+          example: "https://doi.org/10.1234/ro-crate.workflow-alpha"
+        conformsTo:
+          type: string
+          description: URL of the RO-Crate profile this crate conforms to
+          example: "https://w3id.org/ro/crate/1.1"
+        content:
+          type: string
+          description: The `ro-crate-metadata.json` content serialised as a string
+          example: '{"@context":"https://w3id.org/ro/crate/1.1/context","@graph":[]}'
+
+    ComponentRef:
+      type: object
+      description: A reference to another WorkflowArtifactPackage or graph node
+      required: [id, version]
+      properties:
+        id:
+          type: string
+          example: "component.qc"
+        version:
+          type: string
+          example: "2.1.0"
+        registry:
+          type: ["string", "null"]
+          description: Registry where the dependency can be resolved (defaults to the same registry)
+          example: "carp-registry"
+
+    ValidationAssets:
+      type: object
+      description: Schemas and test inputs for validating workflow inputs and outputs
+      properties:
+        schemas:
+          type: ["object", "null"]
+          additionalProperties:
+            type: string
+          description: JSON schemas keyed by port name
+          example:
+            workflowSchema: '{"type":"object"}'
+        testInputs:
+          type: ["object", "null"]
+          additionalProperties:
+            type: string
+          description: Example input values keyed by port name
+          example:
+            smoke: '{"sample":"input"}'
+
+    # ── Search & Publish ──────────────────────────────────────────────────────
+
+    SearchQuery:
+      type: object
+      description: Criteria for discovering workflow packages. All fields are optional — omit those you do not need.
+      properties:
+        keywords:
+          type: array
+          items:
+            type: string
+          default: []
+          description: >
+            Free-text keywords matched against name, description, and tags.
+            Any-match semantics: a package is returned if any keyword matches.
+          example: ["risk", "scoring"]
+        tags:
+          type: array
+          items:
+            type: string
+          default: []
+          description: >
+            Tag values to filter by. In R1, tags are included in keyword matching —
+            dedicated tag filtering is not yet active. Use `keywords` to search by tag value.
+          example: ["dsp"]
+        format:
+          oneOf:
+            - $ref: "#/components/schemas/WorkflowFormat"
+            - type: "null"
+          description: "Restrict results to a specific workflow format. Not yet active in R1."
+        platformId:
+          type: ["string", "null"]
+          description: "Restrict results to packages compatible with this platform. Not yet active in R1."
+          example: "aware-rapids"
+        granularity:
+          oneOf:
+            - $ref: "#/components/schemas/WorkflowGranularity"
+            - type: "null"
+          description: Restrict results by workflow granularity
+        inputTypes:
+          type: array
+          items:
+            type: string
+          default: []
+          description: >
+            Filter to packages that declare at least one of these ontology URIs in their
+            input port `ontologyRef` values. Matched by exact URI equality.
+          example: ["https://schema.org/Dataset"]
+        outputTypes:
+          type: array
+          items:
+            type: string
+          default: []
+          description: >
+            Filter to packages that declare at least one of these ontology URIs in their
+            output port `ontologyRef` values. Matched by exact URI equality.
+          example: ["https://schema.org/Dataset"]
+        methods:
+          type: array
+          items:
+            type: string
+          default: []
+          description: >
+            Filter to packages that declare at least one of these method names.
+            Matched against `MethodRef.name`.
+          example: ["xgboost"]
+        sensitivityClass:
+          oneOf:
+            - $ref: "#/components/schemas/DataSensitivity"
+            - type: "null"
+          description: Restrict results to packages with exactly this sensitivity class
+
+    PublishResult:
+      type: object
+      description: Outcome of a publish call
+      required: [accepted, id, version]
+      properties:
+        accepted:
+          type: boolean
+          description: Whether the package was accepted by the registry
+        id:
+          type: string
+          example: "workflow.pkg.alpha"
+        version:
+          type: string
+          example: "1.0.0"
+        message:
+          type: ["string", "null"]
+          description: Optional status or rejection message
+          example: "Package accepted and indexed successfully"
+
+    # ── Compatibility ─────────────────────────────────────────────────────────
+
+    CompatibilityRequest:
+      type: object
+      description: Target platform to evaluate the package against
+      required: [platformId]
+      properties:
+        platformId:
+          type: string
+          description: Stable identifier of the target platform
+          example: "aware-rapids"
+
+    CompatibilityReport:
+      type: object
+      description: >
+        Structured result of evaluating a WorkflowArtifactPackage against a PlatformProfile.
+        See `docs/compatibility-evaluator.md` for evaluation rules and signal semantics.
+      required: [signal, platformId]
+      properties:
+        signal:
+          $ref: "#/components/schemas/CompatibilitySignal"
+        platformId:
+          type: string
+          description: The platform this report was evaluated against
+          example: "aware-rapids"
+        supportedOperations:
+          type: array
+          items:
+            type: string
+          default: []
+          description: Operations in the package that the platform can execute
+        unsupportedOperations:
+          type: array
+          items:
+            type: string
+          default: []
+          description: Operations in the package that the platform cannot execute
+        missingEnvironments:
+          type: array
+          items:
+            $ref: "#/components/schemas/EnvironmentType"
+          default: []
+          description: Environment types required by the package but absent from the platform
+        requiredAdaptations:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdaptationHint"
+          default: []
+          description: Structured hints describing each required change
+
+    AdaptationHint:
+      type: object
+      description: Describes a single required adaptation
+      required: [severity, message]
+      properties:
+        severity:
+          $ref: "#/components/schemas/AdaptationSeverity"
+        message:
+          type: string
+          description: Human-readable description of the required change
+          example: "Environment type 'PIXI' is required by the workflow but not supported by 'aware-rapids'."
+        field:
+          type: ["string", "null"]
+          description: The specific field or operation this hint applies to
+          example: "environments[PIXI]"
+
+    # ── Lineage ───────────────────────────────────────────────────────────────
+
+    LineageGraph:
+      type: object
+      description: Provenance graph for a workflow package
+      properties:
+        nodes:
+          type: array
+          items:
+            $ref: "#/components/schemas/LineageNode"
+          default: []
+        edges:
+          type: array
+          items:
+            $ref: "#/components/schemas/LineageEdge"
+          default: []
+
+    LineageNode:
+      type: object
+      required: [id, version]
+      properties:
+        id:
+          type: string
+          example: "workflow.pkg.alpha"
+        version:
+          type: string
+          example: "1.0.0"
+
+    LineageEdge:
+      type: object
+      required: [fromId, fromVersion, toId, toVersion, relation]
+      properties:
+        fromId:
+          type: string
+          example: "workflow.pkg.alpha"
+        fromVersion:
+          type: string
+          example: "1.0.0"
+        toId:
+          type: string
+          example: "component.qc"
+        toVersion:
+          type: string
+          example: "2.1.0"
+        relation:
+          type: string
+          description: Directed relationship type between packages
+          example: "DERIVED_FROM"
+
+    # ── Error ─────────────────────────────────────────────────────────────────
+
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          example: "NOT_FOUND"
+        message:
+          type: string
+          example: "No package found for id='workflow.pkg.alpha' version='1.0.0'"
+
+    # ── Enumerations ──────────────────────────────────────────────────────────
+
+    WorkflowFormat:
+      type: string
+      enum: [CARP_DSP, RAPIDS, CWL]
+      description: |
+        Native format of the workflow definition:
+        - `CARP_DSP` — CARP Data Science Pipeline YAML
+        - `RAPIDS` — Aware/RAPIDS workflow format
+        - `CWL` — Common Workflow Language
+
+    WorkflowGranularity:
+      type: string
+      enum: [TASK, SUB_WORKFLOW, WORKFLOW]
+      description: |
+        Scope of the packaged workflow unit:
+        - `TASK` — single task/operator
+        - `SUB_WORKFLOW` — reusable sub-workflow
+        - `WORKFLOW` — full end-to-end workflow
+
+    DataSensitivity:
+      type: string
+      enum: [PUBLIC, PSEUDONYMISED, IDENTIFIABLE, RESTRICTED]
+      description: |
+        Data sensitivity classification for a workflow package:
+        - `PUBLIC` — no sensitive data expected
+        - `PSEUDONYMISED` — indirect identifiers present
+        - `IDENTIFIABLE` — direct identifiers present
+        - `RESTRICTED` — highly controlled data requiring strict governance
+
+    EnvironmentType:
+      type: string
+      enum: [CONDA, PIXI, R, SYSTEM, DOCKER]
+      description: |
+        Execution environment type required or supported by a workflow step:
+        - `CONDA` — Conda environment managed via `environment.yml`
+        - `PIXI` — Pixi environment managed via `pixi.toml`
+        - `R` — R environment
+        - `SYSTEM` — System-installed runtime; no environment manager
+        - `DOCKER` — Docker container image
+
+    ScriptLanguage:
+      type: string
+      enum: [PYTHON, R, BASH, SHELL]
+      description: |
+        Programming language of a supporting script:
+        - `PYTHON` — Python script
+        - `R` — R script
+        - `BASH` — Bash shell script
+        - `SHELL` — Generic POSIX shell script
+
+    AdaptationSeverity:
+      type: string
+      enum: [BLOCKING, WARNING, INFO]
+      description: |
+        How blocking a required adaptation is:
+        - `BLOCKING` — workflow cannot run on the target platform without this change
+        - `WARNING` — workflow can run but may behave differently or require manual steps
+        - `INFO` — informational note; no execution impact
+
+    CompatibilitySignal:
+      type: string
+      enum: [COMPATIBLE, COMPATIBLE_WITH_ADAPTATIONS, INCOMPATIBLE]
+      description: |
+        Overall verdict from a compatibility evaluation:
+        - `COMPATIBLE` — package can run on the platform as-is
+        - `COMPATIBLE_WITH_ADAPTATIONS` — package can run after the listed adaptations
+        - `INCOMPATIBLE` — package cannot run on the platform
+
+    RelationType:
+      type: string
+      enum:
+        - CONTAINS
+        - PART_OF
+        - DEPENDS_ON
+        - IMPLEMENTS
+        - NEW_VERSION_OF
+        - DERIVED_FROM
+        - ASSEMBLED_FROM
+        - EXTENDS
+        - VALIDATED_BY
+        - DESCRIBED_IN
+      description: |
+        Directed edge type in the component graph:
+        - `CONTAINS` — workflow contains a step
+        - `PART_OF` — step belongs to a workflow
+        - `DEPENDS_ON` — component depends on another component or data type
+        - `IMPLEMENTS` — workflow or step implements a method
+        - `NEW_VERSION_OF` — this component supersedes a prior version
+        - `DERIVED_FROM` — this component was derived from another
+        - `ASSEMBLED_FROM` — this component was assembled from multiple others
+        - `EXTENDS` — this component extends another
+        - `VALIDATED_BY` — validated against a publication or test suite
+        - `DESCRIBED_IN` — described in an external publication
+
+  # ── Examples ─────────────────────────────────────────────────────────────────
+
+  examples:
+
+    RiskScoringPackage:
+      summary: Full WorkflowArtifactPackage for a CARP_DSP risk-scoring workflow
+      value:
+        id: "workflow.pkg.alpha"
+        version: "1.0.0"
+        contentHash: "sha256:5f16f8d91f2dce13c6d04f87ca9f973641f92be9ed6077dbf637f2ca4490f7ca"
+        metadata:
+          name: "Risk Scoring Workflow"
+          granularity: "WORKFLOW"
+          description: "End-to-end DSP risk-scoring pipeline"
+          authors: ["Alice", "Bob"]
+          license: "Apache-2.0"
+          tags: ["dsp", "cwl", "risk"]
+          inputs:
+            - id: "patient_table"
+              type: "tabular"
+              format: "csv"
+              ontologyRef: "https://schema.org/Dataset"
+              notes: "Input cohort features"
+          outputs:
+            - id: "risk_scores"
+              type: "tabular"
+              format: "parquet"
+              ontologyRef: "https://schema.org/Dataset"
+          methods:
+            - name: "xgboost"
+              toolId: "xgboost"
+              toolVersion: "2.0.0"
+              reference: "https://xgboost.readthedocs.io/"
+          sensitivityClass: "PSEUDONYMISED"
+        native:
+          format: "CARP_DSP"
+          content: "workflow:\n  steps: []\nenvironments:\n  env-pixi:\n    name: python-pixi\n    kind: \"pixi\"\n    spec:\n      dependencies: [\"pandas\", \"numpy\"]\n      pythonVersion: [\"3.11\"]"
+        cwl:
+          content: "cwlVersion: v1.2\nclass: Workflow\ninputs: {}\noutputs: {}\nsteps: {}"
+          toolVersion: "v1.2.1"
+        scripts:
+          - name: "prepare_data.py"
+            language: "PYTHON"
+            content: "import pandas as pd\nprint('prepare')"
+          - name: "run.sh"
+            language: "BASH"
+            content: "#!/bin/bash\necho 'running'"
+        dependencies:
+          - id: "component.qc"
+            version: "2.1.0"
+            registry: "carp-registry"
+        validation:
+          schemas:
+            workflowSchema: '{"type":"object"}'
+          testInputs:
+            smoke: '{"sample":"input"}'
+
+    SearchByFormat:
+      summary: Search for CARP_DSP packages with xgboost methods and tabular inputs
+      value:
+        keywords: ["risk", "scoring"]
+        granularity: "WORKFLOW"
+        inputTypes: ["https://schema.org/Dataset"]
+        outputTypes: ["https://schema.org/Dataset"]
+        methods: ["xgboost"]
+        sensitivityClass: "PSEUDONYMISED"
+
+    SearchResults:
+      summary: Search response containing one matching package
+      value:
+        - id: "workflow.pkg.alpha"
+          version: "1.0.0"
+          contentHash: "sha256:5f16f8d91f2dce13c6d04f87ca9f973641f92be9ed6077dbf637f2ca4490f7ca"
+          metadata:
+            name: "Risk Scoring Workflow"
+            granularity: "WORKFLOW"
+            description: "End-to-end DSP risk-scoring pipeline"
+            authors: ["Alice"]
+            license: "Apache-2.0"
+            tags: ["dsp", "risk"]
+            inputs:
+              - id: "patient_table"
+                type: "tabular"
+                ontologyRef: "https://schema.org/Dataset"
+            outputs:
+              - id: "risk_scores"
+                type: "tabular"
+            methods:
+              - name: "xgboost"
+                toolId: "xgboost"
+            sensitivityClass: "PUBLIC"
+          native:
+            format: "CARP_DSP"
+            content: "workflow:\n  steps: []"
+
+    CompatibilityRequest:
+      summary: Check package compatibility against the Aware/RAPIDS platform
+      value:
+        platformId: "aware-rapids"
+
+    IncompatibleReport:
+      summary: INCOMPATIBLE — workflow requires PIXI which the target platform does not support
+      value:
+        signal: "INCOMPATIBLE"
+        platformId: "aware-rapids"
+        supportedOperations: []
+        unsupportedOperations: []
+        missingEnvironments: ["PIXI"]
+        requiredAdaptations:
+          - severity: "BLOCKING"
+            message: "Environment type 'PIXI' is required by the workflow but not supported by 'aware-rapids'. Supported environments: CONDA, SYSTEM."
+            field: "environments[PIXI]"
+
+    CompatibleReport:
+      summary: COMPATIBLE — package runs on the platform without any adaptations
+      value:
+        signal: "COMPATIBLE"
+        platformId: "carp-dsp"
+        supportedOperations: []
+        unsupportedOperations: []
+        missingEnvironments: []
+        requiredAdaptations: []
+
+    RelatedSteps:
+      summary: Steps contained in a workflow (relation=CONTAINS)
+      value:
+        - id: "step.preprocess-accel"
+          version: "1.0.0"
+          registry: "carp-registry"
+        - id: "step.sleep-detection"
+          version: "2.1.0"
+          registry: "carp-registry"
