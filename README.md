@@ -78,6 +78,7 @@ When a package is published, it is indexed into a node/edge graph: workflow node
 This graph powers semantic discovery and lineage traversal across all published components.
 
 `InMemoryComponentIndex` is the R1 implementation, backed by an adjacency map with JSON persistence — graph state is serialised to `data/graph-state.json` and restored on server restart without re-indexing.
+The server persists this file via a temp-file + replace move strategy so repeated publishes work reliably on Windows too.
 
 See [docs/component-index.md](docs/component-index.md) for the full node/edge type reference, indexing rules, and persistence examples.
 

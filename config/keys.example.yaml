@@ -1,0 +1,19 @@
+# API key configuration for the R0 server.
+# Copy this file to config/keys.yaml and replace keys with real secrets.
+# Do NOT commit config/keys.yaml to version control.
+#
+# Generate a new key with:
+#   ./gradlew :server:generateKey -PuserId=you@example.com -Pname="Your Name"
+
+keys:
+  - key: "change-me-researcher-key"
+    userId: "researcher@example.com"
+    name: "Researcher"
+
+  - key: "change-me-carp-service-key"
+    userId: "carp-dsp-service"
+    name: "CARP-DSP Service Account"
+
+  - key: "change-me-aware-service-key"
+    userId: "aware-rapids-service"
+    name: "Aware/RAPIDS Service Account"

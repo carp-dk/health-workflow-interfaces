@@ -109,6 +109,7 @@ index.loadFromJsonString(json)
 ```
 
 This is used by the R0 server to persist graph state to `data/graph-state.json` on every write and restore it on startup — no re-indexing required after a restart.
+The server writes to a temporary sibling file first and then moves it into place with replace semantics, which avoids the Windows rename failures that can happen with `File.renameTo()`.
 
 ## Usage
 
@@ -138,6 +139,6 @@ if (stateFile.exists()) {
     index.loadFromJsonString(stateFile.readText())
 }
 
-// After each write: persist to disk
-stateFile.writeText(index.encodeToJsonString())
+// After each write: persist to disk with a temp file and replace-safe move
+stateFile.writeText(index.encodeToJsonString()) // implementors should use the server helper
 ```
