@@ -296,15 +296,15 @@ class DefaultCompatibilityEvaluatorTest {
         formats: List<WorkflowFormat>,
         scriptLanguages: List<ScriptLanguage> = emptyList(),
         environments: List<EnvironmentType> = emptyList(),
-    ) = object : PlatformProfile {
-        override val platformId = platformId
-        override val supportedFormats = formats
-        override val supportedEnvironments = environments
-        override val supportedOperations = emptyList<String>()
-        override val constraints = PlatformConstraints(
+    ) = PlatformProfile(
+        platformId = platformId,
+        supportedFormats = formats,
+        supportedEnvironments = environments,
+        supportedOperations = emptyList(),
+        constraints = PlatformConstraints(
             maxDependencyDepth = 5,
             requiresDOI = false,
             supportedScriptLanguages = scriptLanguages,
-        )
-    }
+        ),
+    )
 }

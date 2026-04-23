@@ -34,32 +34,33 @@ Supporting components handle serialization, compatibility evaluation, and option
 
 ```mermaid
 flowchart LR
-    subgraph CARP ["CARP-DSP"]
-        DSP_SVC["DspConsumptionService\nimplements ConsumptionInterface"]
-        DSP_PROF["DspPlatformProfile"]
-    end
-
-    subgraph SERVER ["Server (R0)"]
-        CI["ConsumptionInterface"]
+    subgraph SERVER ["Registry Server (R0)"]
+        CI["RegistryService\nimplements ConsumptionInterface"]
         IDX["ComponentIndex\n(InMemoryComponentIndex)"]
         STORE[("graph-state.json\n+ packages/")]
     end
 
-    subgraph AWARE ["Aware / RAPIDS"]
-        AWR_ADAPT["AwareConsumptionAdapter\n(Python, via OpenAPI)"]
-        AWR_PROF["AwarePlatformProfile"]
+    subgraph CARP ["CARP-DSP client"]
+        DSP_HTTP["HTTP client\n(ConsumptionInterface)"]
+        DSP_PROF["DspPlatformProfile\n(submitted on checkCompatibility)"]
+    end
+
+    subgraph AWARE ["Aware / RAPIDS client"]
+        AWR_HTTP["HTTP client\n(Python, via OpenAPI)"]
+        AWR_PROF["AwarePlatformProfile\n(submitted on checkCompatibility)"]
     end
 
     WFH[("WorkflowHub\n(optional)")]
 
-    DSP_SVC -->|publish WAP| CI
+    DSP_HTTP -->|publish / search / getComponent| CI
+    DSP_PROF -->|checkCompatibility body| CI
+
+    AWR_HTTP -->|publish / search / getComponent| CI
+    AWR_PROF -->|checkCompatibility body| CI
+
     CI --> IDX
     IDX --> STORE
-
-    AWR_ADAPT -->|publish / search / getComponent| CI
-    AWR_ADAPT -->|checkCompatibility| CI
-
-    CI -.->|RO-Crate adapter| WFH
+    CI -.->|WorkflowHubPort| WFH
 ```
 
 ### Workflow Artifact Package
@@ -92,9 +93,9 @@ The machine-readable OpenAPI contract is available at [`openapi.yaml`](openapi.y
 
 ### Platform Profile
 
-[`PlatformProfile`](docs/platform-profile.md) is the interface a platform implements to declare its capabilities — supported workflow formats, environment types, script languages, and operational constraints.
-It is used as input to `CompatibilityEvaluator` when checking whether an incoming package can run on a given platform.
-The `CompatibilityReport` returned by `checkCompatibility` is also documented there alongside `CompatibilitySignal` and `AdaptationHint`.
+[`PlatformProfile`](docs/platform-profile.md) is a serializable data class that a client submits as the body of a `checkCompatibility` request to declare its capabilities — supported workflow formats, environment types, script languages, and operational constraints.
+The server has no registry of known platforms; each client is responsible for constructing and sending its own profile.
+The `CompatibilityReport` returned describes the outcome alongside `CompatibilitySignal` and any `AdaptationHint` values.
 
 See [docs/platform-profile.md](docs/platform-profile.md) for full field documentation and type definitions.
 

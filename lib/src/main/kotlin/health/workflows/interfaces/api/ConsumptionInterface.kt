@@ -58,9 +58,10 @@ interface ConsumptionInterface {
     /**
      * Perform live compatibility evaluation for a package against a target platform.
      *
-     * Results are expected to be computed at request time rather than served from stale snapshots.
+     * The caller supplies the full [PlatformProfile] — the server has no registry of platforms.
+     * Results are computed at request time.
      */
-    suspend fun checkCompatibility(id: String, version: String, platformId: String): CompatibilityReport
+    suspend fun checkCompatibility(id: String, version: String, profile: PlatformProfile): CompatibilityReport
 
     /**
      * Retrieve lineage information for a package identity and version.
@@ -71,27 +72,19 @@ interface ConsumptionInterface {
 }
 
 /**
- * Declares the capabilities and constraints of a platform to the interoperability layer.
+ * Declares the capabilities and constraints of a platform.
  *
- * Implementations are platform-owned and should describe what the platform can execute
- * today, not what it might support after future adaptation.
+ * Submitted by the client at the time of a compatibility check — the server never
+ * maintains a registry of platform profiles.
  */
-interface PlatformProfile {
-    /** Stable identifier for the platform implementation. */
-    val platformId: String
-
-    /** Workflow formats that can be executed or consumed directly. */
-    val supportedFormats: List<WorkflowFormat>
-
-    /** Environment types that can be provisioned or executed by the platform. */
-    val supportedEnvironments: List<EnvironmentType>
-
-    /** Operation names that are natively supported by the platform. */
-    val supportedOperations: List<String>
-
-    /** Constraints that bound adaptation and dependency resolution decisions. */
-    val constraints: PlatformConstraints
-}
+@Serializable
+data class PlatformProfile(
+    val platformId: String,
+    val supportedFormats: List<WorkflowFormat>,
+    val supportedEnvironments: List<EnvironmentType> = emptyList(),
+    val supportedOperations: List<String> = emptyList(),
+    val constraints: PlatformConstraints,
+)
 
 @Serializable
 data class SearchQuery(
@@ -256,7 +249,7 @@ data class ResolveDependenciesResponse(
 data class CheckCompatibilityRequest(
     val id: String,
     val version: String,
-    val platformId: String,
+    val profile: PlatformProfile,
 )
 
 @Serializable

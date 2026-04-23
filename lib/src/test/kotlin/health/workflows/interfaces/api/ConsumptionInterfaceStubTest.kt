@@ -26,7 +26,7 @@ class ConsumptionInterfaceStubTest {
             api.publish(samplePackage())
             api.getDOI("component.alpha", "1.0.0")
             api.resolveDependencies("component.alpha", "1.0.0")
-            api.checkCompatibility("component.alpha", "1.0.0", "aware")
+            api.checkCompatibility("component.alpha", "1.0.0", sampleProfile())
             api.getLineage("component.alpha", "1.0.0")
             Unit
         }.startCoroutine(
@@ -56,10 +56,10 @@ class ConsumptionInterfaceStubTest {
 
         override suspend fun resolveDependencies(id: String, version: String): List<ComponentRef> = emptyList()
 
-        override suspend fun checkCompatibility(id: String, version: String, platformId: String): CompatibilityReport =
+        override suspend fun checkCompatibility(id: String, version: String, profile: PlatformProfile): CompatibilityReport =
             CompatibilityReport(
                 signal = CompatibilitySignal.COMPATIBLE,
-                platformId = platformId,
+                platformId = profile.platformId,
                 supportedOperations = listOf(
                     "getComponent",
                     "search",
@@ -86,7 +86,16 @@ class ConsumptionInterfaceStubTest {
                 metadata = PackageMetadata(name = "Stub Package", granularity = WorkflowGranularity.WORKFLOW),
                 native = NativeWorkflowAsset(format = WorkflowFormat.CARP_DSP, content = "workflow: stub"),
             )
+
+        private fun sampleProfile(platformId: String = "aware"): PlatformProfile =
+            PlatformProfile(
+                platformId = platformId,
+                supportedFormats = listOf(WorkflowFormat.CARP_DSP),
+                constraints = PlatformConstraints(
+                    maxDependencyDepth = 8,
+                    requiresDOI = false,
+                    supportedScriptLanguages = listOf(ScriptLanguage.PYTHON),
+                ),
+            )
     }
 }
-
-

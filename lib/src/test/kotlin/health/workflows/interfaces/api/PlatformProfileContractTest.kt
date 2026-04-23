@@ -16,7 +16,7 @@ class PlatformProfileContractTest {
 
     @Test
     fun minimalPlatformProfileFieldAccessWorks() {
-        val profile = MinimalPlatformProfile(
+        val profile = PlatformProfile(
             platformId = "carp-dsp",
             supportedFormats = listOf(WorkflowFormat.CARP_DSP),
             supportedEnvironments = listOf(EnvironmentType.CONDA),
@@ -62,13 +62,5 @@ class PlatformProfileContractTest {
         assertEquals(true, decoded.compatible)
         assertEquals(listOf("Publish step must be routed through a registry adapter.", "Unsupported operations: publish", "Missing environments: DOCKER"), decoded.reasons)
     }
-
-    private data class MinimalPlatformProfile(
-        override val platformId: String,
-        override val supportedFormats: List<WorkflowFormat>,
-        override val supportedEnvironments: List<EnvironmentType>,
-        override val supportedOperations: List<String>,
-        override val constraints: PlatformConstraints,
-    ) : PlatformProfile
 }
 

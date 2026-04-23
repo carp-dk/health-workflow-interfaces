@@ -1,17 +1,15 @@
 # Platform Profile
 
-[`PlatformProfile`](../lib/src/main/kotlin/health/workflows/interfaces/model/api/ConsumptionInterface.kt) is the interface a platform implements to declare its capabilities to the interoperability layer.
+[`PlatformProfile`](../lib/src/main/kotlin/health/workflows/interfaces/api/ConsumptionInterface.kt) is a serializable data class that a client submits as the body of a `checkCompatibility` request.
 It answers the question: _what can this platform actually execute?_
 
-A profile is consumed by `CompatibilityEvaluator` when responding to `checkCompatibility` calls.
-Implementations should describe current, real capabilities — not aspirational ones.
+The server has no registry of known platforms. Each client constructs its own profile and sends it with the request — the server evaluates the package against whatever profile it receives.
 
 ## Object model
 
 ```mermaid
 classDiagram
     class PlatformProfile {
-        <<interface>>
         +String platformId
         +List~WorkflowFormat~ supportedFormats
         +List~EnvironmentType~ supportedEnvironments
@@ -56,15 +54,15 @@ classDiagram
 
 ## PlatformProfile
 
-Implemented by each participating platform to advertise its runtime capabilities.
+Submitted by the calling platform to describe its runtime capabilities.
 
-| Property                | Type                    | Description                                                                                         |
-|-------------------------|-------------------------|-----------------------------------------------------------------------------------------------------|
-| `platformId`            | `String`                | Stable identifier for the platform (e.g. `carp-dsp`, `aware-rapids`)                                |
-| `supportedFormats`      | `List<WorkflowFormat>`  | Workflow formats that the platform can execute or consume directly                                  |
-| `supportedEnvironments` | `List<EnvironmentType>` | Environment types the platform can provision or execute                                             |
-| `supportedOperations`   | `List<String>`          | Operation names natively supported (matched against `WorkflowArtifactPackage` operation references) |
-| `constraints`           | `PlatformConstraints`   | Hard bounds on dependency depth, DOI requirements, and script support                               |
+| Property                | Type                    | Required | Description                                                                                         |
+|-------------------------|-------------------------|:--------:|-----------------------------------------------------------------------------------------------------|
+| `platformId`            | `String`                | Yes      | Stable identifier for the platform (e.g. `carp-dsp`, `aware-rapids`)                               |
+| `supportedFormats`      | `List<WorkflowFormat>`  | Yes      | Workflow formats the platform can execute or consume directly                                       |
+| `supportedEnvironments` | `List<EnvironmentType>` |          | Environment types the platform can provision (default: empty)                                       |
+| `supportedOperations`   | `List<String>`          |          | Operation names natively supported (default: empty)                                                 |
+| `constraints`           | `PlatformConstraints`   | Yes      | Hard bounds on dependency depth, DOI requirements, and script support                               |
 
 ### PlatformConstraints
 
@@ -72,8 +70,8 @@ Operational limits that bound compatibility evaluation and dependency resolution
 
 | Field                      | Type                   | Required | Description                                                              |
 |----------------------------|------------------------|:--------:|--------------------------------------------------------------------------|
-| `maxDependencyDepth`       | `Int`                  |   Yes    | Maximum number of transitive dependency levels the platform will resolve |
-| `requiresDOI`              | `Boolean`              |   Yes    | Whether the platform requires a DOI before accepting a package           |
+| `maxDependencyDepth`       | `Int`                  | Yes      | Maximum number of transitive dependency levels the platform will resolve |
+| `requiresDOI`              | `Boolean`              | Yes      | Whether the platform requires a DOI before accepting a package           |
 | `supportedScriptLanguages` | `List<ScriptLanguage>` |          | Script languages the platform can execute (default: empty)               |
 
 ## Compatibility types
@@ -112,6 +110,6 @@ Describes a single required adaptation, with enough structure for a platform to 
 
 | Field      | Type                 | Required | Description                                                                                         |
 |------------|----------------------|:--------:|-----------------------------------------------------------------------------------------------------|
-| `severity` | `AdaptationSeverity` |   Yes    | How blocking this adaptation is (see [`AdaptationSeverity`](workflow-models.md#adaptationseverity)) |
-| `message`  | `String`             |   Yes    | Human-readable description of what needs to change                                                  |
+| `severity` | `AdaptationSeverity` | Yes      | How blocking this adaptation is (see [`AdaptationSeverity`](workflow-models.md#adaptationseverity)) |
+| `message`  | `String`             | Yes      | Human-readable description of what needs to change                                                  |
 | `field`    | `String?`            |          | The specific field or operation the hint applies to                                                 |

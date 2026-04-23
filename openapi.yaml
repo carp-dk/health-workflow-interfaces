@@ -221,9 +221,10 @@ paths:
       operationId: checkCompatibility
       summary: Check compatibility against a platform
       description: >
-        Evaluates the package against the named platform and returns a structured
-        `CompatibilityReport`. Results are computed at request time — not served
-        from a cache or pre-computed snapshot.
+        Evaluates the package against the caller's platform and returns a structured
+        `CompatibilityReport`. The caller submits their full `PlatformProfile` in the
+        request body — the server has no registry of known platforms.
+        Results are computed at request time.
       parameters:
         - $ref: "#/components/parameters/packageId"
         - $ref: "#/components/parameters/packageVersion"
@@ -232,10 +233,10 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CompatibilityRequest"
+              $ref: "#/components/schemas/PlatformProfile"
             examples:
               aware-check:
-                $ref: "#/components/examples/CompatibilityRequest"
+                $ref: "#/components/examples/AwarePlatformProfile"
       responses:
         "200":
           description: Compatibility report
@@ -790,15 +791,57 @@ components:
 
     # ── Compatibility ─────────────────────────────────────────────────────────
 
-    CompatibilityRequest:
+    PlatformProfile:
       type: object
-      description: Target platform to evaluate the package against
-      required: [platformId]
+      description: >
+        Capabilities of the calling platform, submitted by the client at the time of a
+        compatibility check. The server has no registry of platforms — each client constructs
+        and submits its own profile.
+      required: [platformId, supportedFormats, constraints]
       properties:
         platformId:
           type: string
-          description: Stable identifier of the target platform
+          description: Stable identifier for this platform
           example: "aware-rapids"
+        supportedFormats:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkflowFormat"
+          description: Workflow formats the platform can execute or consume directly
+        supportedEnvironments:
+          type: array
+          items:
+            $ref: "#/components/schemas/EnvironmentType"
+          default: []
+          description: Environment types the platform can provision
+        supportedOperations:
+          type: array
+          items:
+            type: string
+          default: []
+          description: Operation names natively supported by the platform
+        constraints:
+          $ref: "#/components/schemas/PlatformConstraints"
+
+    PlatformConstraints:
+      type: object
+      description: Constraints that bound adaptation and dependency resolution decisions
+      required: [maxDependencyDepth, requiresDOI]
+      properties:
+        maxDependencyDepth:
+          type: integer
+          description: Maximum supported dependency chain depth
+          example: 5
+        requiresDOI:
+          type: boolean
+          description: Whether the platform requires a DOI before accepting a package
+          example: false
+        supportedScriptLanguages:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScriptLanguage"
+          default: []
+          description: Script languages the platform can execute
 
     CompatibilityReport:
       type: object
@@ -1106,10 +1149,17 @@ components:
             format: "CARP_DSP"
             content: "workflow:\n  steps: []"
 
-    CompatibilityRequest:
-      summary: Check package compatibility against the Aware/RAPIDS platform
+    AwarePlatformProfile:
+      summary: Aware/RAPIDS platform profile submitted for a compatibility check
       value:
         platformId: "aware-rapids"
+        supportedFormats: ["RAPIDS", "CWL"]
+        supportedEnvironments: ["CONDA", "SYSTEM"]
+        supportedOperations: []
+        constraints:
+          maxDependencyDepth: 3
+          requiresDOI: false
+          supportedScriptLanguages: ["PYTHON", "BASH"]
 
     IncompatibleReport:
       summary: INCOMPATIBLE — workflow requires PIXI which the target platform does not support
