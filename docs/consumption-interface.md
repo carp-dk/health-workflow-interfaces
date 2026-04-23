@@ -1,7 +1,11 @@
 # Consumption Interface
 
-[`ConsumptionInterface`](../lib/src/main/kotlin/health/workflows/interfaces/model/api/ConsumptionInterface.kt) is the shared API contract that every participating platform implements.
+[`ConsumptionInterface`](../lib/src/main/kotlin/health/workflows/interfaces/api/ConsumptionInterface.kt) is the API contract that every participating platform implements.
 It covers the full lifecycle of a workflow package: publishing, discovery, retrieval, dependency resolution, compatibility checking, DOI minting, and lineage.
+
+A reference implementation is provided in the [`server`](../server/README.md) module.
+
+## Interface
 
 Implementations may back these operations with local catalogues, remote services, or hybrid resolvers.
 The interface is intentionally platform-agnostic, it contains no DSP-specific or Aware-specific behaviour.
@@ -31,7 +35,7 @@ sequenceDiagram
     CI-->>Consumer: WorkflowArtifactPackage
 ```
 
-### [`ConsumptionInterface`](../lib/src/main/kotlin/health/workflows/interfaces/model/api/ConsumptionInterface.kt)
+### [`ConsumptionInterface`](../lib/src/main/kotlin/health/workflows/interfaces/api/ConsumptionInterface.kt)
 
 | Operation             | Signature                                              | Description                                                                                                                     |
 |-----------------------|--------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------|

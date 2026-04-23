@@ -109,7 +109,7 @@ index.loadFromJsonString(json)
 ```
 
 This is used by the R0 server to persist graph state to `data/graph-state.json` on every write and restore it on startup — no re-indexing required after a restart.
-The server writes to a temporary sibling file first and then moves it into place with replace semantics, which avoids the Windows rename failures that can happen with `File.renameTo()`.
+The server persists this file via a temp-file + replace move strategy so repeated publishes work reliably on Windows too. See the [Registry Server README](../server/README.md) for details.
 
 ## Usage
 

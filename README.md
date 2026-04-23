@@ -18,6 +18,7 @@ Two key **design goals** guide this project:
   - [Workflow Artifact Package](docs/workflow-models.md)
   - [Consumption Interface](docs/consumption-interface.md)
   - [Component Index](docs/component-index.md)
+  - [Registry Server](server/README.md)
   - [Platform Profile](docs/platform-profile.md)
   - [Package Deserialiser](docs/package-deserialiser.md)
   - [Compatibility Evaluator](docs/compatibility-evaluator.md)
@@ -78,7 +79,8 @@ When a package is published, it is indexed into a node/edge graph: workflow node
 This graph powers semantic discovery and lineage traversal across all published components.
 
 `InMemoryComponentIndex` is the R1 implementation, backed by an adjacency map with JSON persistence — graph state is serialised to `data/graph-state.json` and restored on server restart without re-indexing.
-The server persists this file via a temp-file + replace move strategy so repeated publishes work reliably on Windows too.
+This is used by the R0 server to persist graph state to `data/graph-state.json` on every write and restore it on startup — no re-indexing required after a restart.
+The server persists this file via a temp-file + replace move strategy so repeated publishes work reliably on Windows too. See the [`server`](../server/README.md) module for details.
 
 See [docs/component-index.md](docs/component-index.md) for the full node/edge type reference, indexing rules, and persistence examples.
 
@@ -91,6 +93,8 @@ Discovery via `search` supports both basic filters (keywords/tags/format) and se
 See [docs/consumption-interface.md](docs/consumption-interface.md) for full operation documentation, supporting types, and request/response objects.
 
 The machine-readable OpenAPI contract is available at [`openapi.yaml`](openapi.yaml).
+
+A reference implementation of the interface is provided in the [`server`](server/README.md) module.
 
 ### Platform Profile
 
