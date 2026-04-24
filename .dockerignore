@@ -1,0 +1,9 @@
+.git
+.gradle
+build
+*/build
+data
+config/keys.yaml
+*.md
+.idea
+*.iml

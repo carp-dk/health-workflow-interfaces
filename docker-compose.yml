@@ -1,0 +1,19 @@
+services:
+  hwf-server:
+    image: ghcr.io/carp-dk/hwf-server:latest
+    build:
+      context: .
+    ports:
+      - "8080:8080"
+    environment:
+      # Override with a real key or mount config/keys.yaml as a volume
+      HWF_API_KEY: "dev-local-key-change-in-production"
+      HWF_PORT: "8080"
+    volumes:
+      - hwf-data:/app/data
+      # Uncomment to use your own keys file instead of the env var default:
+      # - ./config/keys.yaml:/app/config/keys.yaml:ro
+    restart: unless-stopped
+
+volumes:
+  hwf-data:
