@@ -28,11 +28,11 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.14.4"
 
       - name: Build server distribution
-        run: |
-          chmod +x gradlew
-          ./gradlew :server:installDist --no-daemon
+        run: gradle :server:installDist --no-daemon
 
       - name: Log in to GHCR
         if: github.event_name == 'push'
