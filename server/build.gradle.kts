@@ -34,6 +34,7 @@ dependencies {
     testImplementation(libs.ktor.server.test.host)
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testImplementation(libs.junit.jupiter.engine)
+    testImplementation("io.ktor:ktor-server-test-host-jvm:2.3.12")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
