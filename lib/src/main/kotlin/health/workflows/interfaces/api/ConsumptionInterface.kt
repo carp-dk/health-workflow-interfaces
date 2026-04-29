@@ -82,6 +82,13 @@ data class PlatformProfile(
     val platformId: String,
     val supportedFormats: List<WorkflowFormat>,
     val supportedEnvironments: List<EnvironmentType> = emptyList(),
+    /**
+     * Environment types the platform can run with manual adaptation (e.g. install extra tooling).
+     * These produce WARNING hints rather than BLOCKING — the package is runnable but not natively.
+     * This note should probably go to the documentation rather than the data model,
+     * but it's important to clarify the intent of this field.
+     */
+    val environmentsRequiringAdaptation: List<EnvironmentType> = emptyList(),
     val supportedOperations: List<String> = emptyList(),
     val constraints: PlatformConstraints,
 )

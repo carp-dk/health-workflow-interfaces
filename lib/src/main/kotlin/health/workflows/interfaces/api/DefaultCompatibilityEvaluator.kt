@@ -93,9 +93,11 @@ object DefaultCompatibilityEvaluator : CompatibilityEvaluator {
      * ```
      *
      * The `kind` field is extracted via regex and mapped to [EnvironmentType]. Each type that is
-     * absent from [PlatformProfile.supportedEnvironments] produces a BLOCKING hint.
+     * absent from [PlatformProfile.supportedEnvironments] produces a hint:
+     * - BLOCKING if not in [PlatformProfile.environmentsRequiringAdaptation] either
+     * - WARNING if listed in [PlatformProfile.environmentsRequiringAdaptation] (can run with effort)
      *
-     * For other formats (RAPIDS, CWL) the environment structure is not yet standardized, so the
+     * For other formats (RAPIDS, CWL) the environment structure is not yet implemented, so the
      * check is skipped and [missingEnvs] is left unchanged.
      */
     private fun checkEnvironments(
@@ -115,9 +117,13 @@ object DefaultCompatibilityEvaluator : CompatibilityEvaluator {
         missingEnvs += unsupported
 
         for (env in unsupported) {
+            val canAdapt = env in profile.environmentsRequiringAdaptation
             hints += AdaptationHint(
-                severity = AdaptationSeverity.BLOCKING,
-                message = "Environment type '$env' is required by the workflow but not supported by '${profile.platformId}'. " +
+                severity = if (canAdapt) AdaptationSeverity.WARNING else AdaptationSeverity.BLOCKING,
+                message = if (canAdapt)
+                    "Environment type '$env' is not natively supported by '${profile.platformId}' and requires manual adaptation."
+                else
+                    "Environment type '$env' is required by the workflow but not supported by '${profile.platformId}'. " +
                         "Supported environments: ${profile.supportedEnvironments.joinToString()}.",
                 field = "environments[$env]",
             )
