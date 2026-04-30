@@ -40,7 +40,7 @@ tags:
 
 paths:
 
-  # ── Retrieve ──────────────────────────────────────────────────────────────
+  # -- Retrieve --------------------------------------------------------------
 
   /components/{id}/{version}:
     get:
@@ -70,7 +70,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
-  # ── Search ────────────────────────────────────────────────────────────────
+  # -- Search ----------------------------------------------------------------
 
   /components/search:
     post:
@@ -108,7 +108,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
-  # ── Publish ───────────────────────────────────────────────────────────────
+  # -- Publish ---------------------------------------------------------------
 
   /components:
     post:
@@ -141,7 +141,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
-  # ── DOI ───────────────────────────────────────────────────────────────────
+  # -- DOI -------------------------------------------------------------------
 
   /components/{id}/{version}/doi:
     get:
@@ -183,7 +183,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
-  # ── Dependencies ──────────────────────────────────────────────────────────
+  # -- Dependencies ----------------------------------------------------------
 
   /components/{id}/{version}/dependencies:
     get:
@@ -213,7 +213,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
-  # ── Compatibility ─────────────────────────────────────────────────────────
+  # -- Compatibility ---------------------------------------------------------
 
   /components/{id}/{version}/compatibility:
     post:
@@ -258,7 +258,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
-  # ── Lineage ───────────────────────────────────────────────────────────────
+  # -- Lineage ---------------------------------------------------------------
 
   /components/{id}/{version}/lineage:
     get:
@@ -285,7 +285,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
-  # ── Graph traversal ───────────────────────────────────────────────────────
+  # -- Graph traversal -------------------------------------------------------
 
   /components/{id}/{version}/related:
     get:
@@ -312,7 +312,6 @@ paths:
           description: The edge type to traverse
           schema:
             $ref: "#/components/schemas/RelationType"
-          example: "CONTAINS"
       responses:
         "200":
           description: Related component references (may be empty)
@@ -334,11 +333,11 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
-# ── Components ───────────────────────────────────────────────────────────────
+# -- Components ---------------------------------------------------------------
 
 components:
 
-  # ── Security ───────────────────────────────────────────────────────────────
+  # -- Security ---------------------------------------------------------------
 
   securitySchemes:
     bearerAuth:
@@ -350,7 +349,7 @@ components:
         Access to packages with a `sensitivityClass` above the key's access level
         is rejected with 403.
 
-  # ── Parameters ─────────────────────────────────────────────────────────────
+  # -- Parameters -------------------------------------------------------------
 
   parameters:
     packageId:
@@ -360,7 +359,6 @@ components:
       description: Unique package identifier (e.g. `workflow.pkg.alpha`)
       schema:
         type: string
-      example: "workflow.pkg.alpha"
 
     packageVersion:
       name: version
@@ -369,9 +367,8 @@ components:
       description: Package version string (e.g. `1.0.0`)
       schema:
         type: string
-      example: "1.0.0"
 
-  # ── Shared responses ────────────────────────────────────────────────────────
+  # -- Shared responses --------------------------------------------------------
 
   responses:
     Unauthorized:
@@ -424,11 +421,11 @@ components:
             code: INTERNAL_ERROR
             message: "An unexpected error occurred"
 
-  # ── Schemas ──────────────────────────────────────────────────────────────────
+  # -- Schemas ------------------------------------------------------------------
 
   schemas:
 
-    # ── Workflow Artifact Package ─────────────────────────────────────────────
+    # -- Workflow Artifact Package ---------------------------------------------
 
     WorkflowArtifactPackage:
       type: object
@@ -699,7 +696,7 @@ components:
           example:
             smoke: '{"sample":"input"}'
 
-    # ── Search & Publish ──────────────────────────────────────────────────────
+    # -- Search & Publish ------------------------------------------------------
 
     SearchQuery:
       type: object
@@ -789,7 +786,7 @@ components:
           description: Optional status or rejection message
           example: "Package accepted and indexed successfully"
 
-    # ── Compatibility ─────────────────────────────────────────────────────────
+    # -- Compatibility ---------------------------------------------------------
 
     PlatformProfile:
       type: object
@@ -897,7 +894,7 @@ components:
           description: The specific field or operation this hint applies to
           example: "environments[PIXI]"
 
-    # ── Lineage ───────────────────────────────────────────────────────────────
+    # -- Lineage ---------------------------------------------------------------
 
     LineageGraph:
       type: object
@@ -924,6 +921,16 @@ components:
         version:
           type: string
           example: "1.0.0"
+        type:
+          type: string
+          default: step
+          description: Node kind — one of `step`, `environment`, or `package`.
+          example: "environment"
+        label:
+          type: string
+          nullable: true
+          description: Human-readable display name for the node.
+          example: "python-env"
 
     LineageEdge:
       type: object
@@ -946,7 +953,7 @@ components:
           description: Directed relationship type between packages
           example: "DERIVED_FROM"
 
-    # ── Error ─────────────────────────────────────────────────────────────────
+    # -- Error -----------------------------------------------------------------
 
     ErrorResponse:
       type: object
@@ -959,7 +966,7 @@ components:
           type: string
           example: "No package found for id='workflow.pkg.alpha' version='1.0.0'"
 
-    # ── Enumerations ──────────────────────────────────────────────────────────
+    # -- Enumerations ----------------------------------------------------------
 
     WorkflowFormat:
       type: string
@@ -1054,7 +1061,7 @@ components:
         - `VALIDATED_BY` — validated against a publication or test suite
         - `DESCRIBED_IN` — described in an external publication
 
-  # ── Examples ─────────────────────────────────────────────────────────────────
+  # -- Examples -----------------------------------------------------------------
 
   examples:
 

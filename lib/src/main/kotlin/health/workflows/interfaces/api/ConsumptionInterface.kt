@@ -188,6 +188,8 @@ data class LineageGraph(
 data class LineageNode(
     val id: String,
     val version: String,
+    val type: String = "step",
+    val label: String? = null,
 )
 
 @Serializable
