@@ -6,8 +6,21 @@ package health.workflows.interfaces.api
  * Keeps lineage output consistent without forcing HWI to parse native workflows.
  */
 object LineageConformance {
-    val allowedNodeTypes: Set<String> = setOf("step", "environment", "package")
-    val allowedRelations: Set<String> = setOf("USES", "CONTAINS")
+    /**
+     * Node types a conforming lineage graph may contain.
+     *
+     * `protocol` represents a study protocol a workflow draws data from, so the
+     * relationship between data collection and analysis appears in the same
+     * graph as environment and package provenance.
+     */
+    val allowedNodeTypes: Set<String> = setOf("step", "environment", "package", "protocol")
+
+    /**
+     * Edge relations a conforming lineage graph may contain.
+     *
+     * `CONSUMES_FROM` links a step to a `protocol` node it takes input data from.
+     */
+    val allowedRelations: Set<String> = setOf("USES", "CONTAINS", "CONSUMES_FROM")
 
     /**
      * Validate that a lineage graph conforms to the standard contract.

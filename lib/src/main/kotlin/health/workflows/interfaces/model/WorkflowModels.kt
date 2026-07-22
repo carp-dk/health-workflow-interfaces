@@ -105,6 +105,26 @@ data class MethodRef(
     val reference: String? = null,
 )
 
+/**
+ * A study protocol a workflow draws data from.
+ *
+ * @property id Study protocol identifier. The protocol's name is not a key,
+ *   so this is the only field safe to match on.
+ * @property version Protocol version; `null` when the reference is unpinned
+ *   and therefore resolves to the latest.
+ * @property name Human-readable label for display only, never a key. May be
+ *   absent, since it comes from the workflow's own declaration.
+ * @property dataTypes Data types the workflow expects this protocol to
+ *   collect, sorted for stable comparison.
+ */
+@Serializable
+data class ProtocolReference(
+    val id: String,
+    val version: Int? = null,
+    val name: String? = null,
+    val dataTypes: List<String> = emptyList(),
+)
+
 @Serializable
 data class PackageMetadata(
     val name: String,
@@ -117,6 +137,7 @@ data class PackageMetadata(
     val outputs: List<PortSummary> = emptyList(),
     val methods: List<MethodRef> = emptyList(),
     val sensitivityClass: DataSensitivity = DataSensitivity.PUBLIC,
+    val protocols: List<ProtocolReference> = emptyList(),
 )
 
 @Serializable

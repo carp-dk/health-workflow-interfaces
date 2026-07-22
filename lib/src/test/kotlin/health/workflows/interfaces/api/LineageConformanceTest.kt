@@ -24,6 +24,32 @@ class LineageConformanceTest {
     }
 
     @Test
+    fun `graph with a protocol node and CONSUMES_FROM edge conforms`() {
+        val graph = LineageGraph(
+            nodes = listOf(
+                LineageNode(id = "s1", version = "", type = "step", label = "step"),
+                LineageNode(
+                    id = "aabbccdd-0000-4000-8000-000000000001",
+                    version = "2",
+                    type = "protocol",
+                    label = "HR study protocol",
+                ),
+            ),
+            edges = listOf(
+                LineageEdge(
+                    fromId = "s1",
+                    fromVersion = "",
+                    toId = "aabbccdd-0000-4000-8000-000000000001",
+                    toVersion = "2",
+                    relation = "CONSUMES_FROM",
+                ),
+            ),
+        )
+
+        assertTrue(LineageConformance.validate(graph).isEmpty())
+    }
+
+    @Test
     fun `invalid graph reports conformance errors`() {
         val graph = LineageGraph(
             nodes = listOf(LineageNode(id = "s1", version = "", type = "invalid", label = "step")),
