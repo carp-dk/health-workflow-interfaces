@@ -133,8 +133,47 @@ class WorkflowModelsSerializationTest {
                     ),
                 ),
                 sensitivityClass = DataSensitivity.RESTRICTED,
+                protocols = listOf(
+                    ProtocolReference(
+                        id = "aabbccdd-0000-4000-8000-000000000001",
+                        version = 2,
+                        name = "HR study protocol",
+                        dataTypes = listOf("dk.cachet.carp.heartrate", "dk.cachet.carp.stepcount"),
+                    ),
+                ),
             ),
         )
+    }
+
+    @Test
+    fun protocolReferenceRoundTripSerialization() {
+        assertRoundTrip(
+            ProtocolReference(
+                id = "aabbccdd-0000-4000-8000-000000000001",
+                version = 1,
+                name = "HR study protocol",
+                dataTypes = listOf("dk.cachet.carp.heartrate"),
+            ),
+        )
+        // Unpinned reference with no label or declared types.
+        assertRoundTrip(ProtocolReference(id = "aabbccdd-0000-4000-8000-000000000002"))
+    }
+
+    @Test
+    fun packageMetadataWithoutProtocolsFieldStillDeserializes() {
+        // A record written before `protocols` existed must still load, so the
+        // field has to stay optional with an empty default.
+        val legacy = """
+            {
+              "name": "Legacy Package",
+              "granularity": "WORKFLOW"
+            }
+        """.trimIndent()
+
+        val decoded = json.decodeFromString<PackageMetadata>(legacy)
+
+        assertEquals("Legacy Package", decoded.name)
+        assertEquals(emptyList(), decoded.protocols)
     }
 
     @Test
